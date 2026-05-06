@@ -1,0 +1,133 @@
+@page {
+  size: A4;
+  margin: 20mm 20mm 10mm 10mm;
+}
+
+/* === Body layout === */
+body {
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 11pt;
+  line-height: 1.6;
+  color: #1f2937;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 1em 2em;
+}
+
+/* === Headings === */
+h1 {
+  font-size: 1.8em;
+  border-bottom: 2px solid #063F1E;
+  padding-bottom: 0.3em;
+  margin-bottom: 0.5em;
+}
+
+h2 {
+  font-size: 1.4em;
+  color: #063F1E;
+  border-bottom: 1px solid #d1fae5;
+  padding-bottom: 0.2em;
+  margin-top: 1.5em;
+  page-break-after: avoid;
+}
+
+h3 {
+  font-size: 1.1em;
+  color: #374151;
+  margin-top: 1.2em;
+  page-break-after: avoid;
+}
+
+/* === Table styling === */
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-top: 12px;
+  margin-bottom: 12px;
+  font-size: 0.92em;
+}
+
+table th,
+table td {
+  border: 1px solid #d3d3d3;
+  padding: 6px 10px;
+  text-align: left;
+}
+
+table th {
+  background-color: #f5f5f5;
+  font-weight: 600;
+}
+
+/* === Images === */
+img {
+  border: 1px solid #d3d3d3;
+  border-radius: 4px;
+  padding: 4px;
+  background-color: white;
+  margin-top: 8px;
+  margin-bottom: 12px;
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.1);
+  page-break-inside: avoid;
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+/* === Blockquotes (callouts) === */
+blockquote {
+  border-left: 4px solid #d1fae5;
+  background: #f0fdf4;
+  margin: 1em 0;
+  padding: 0.6em 1em;
+  font-size: 0.95em;
+  color: #374151;
+}
+
+/* === Code / inline code === */
+code {
+  background: #f3f4f6;
+  padding: 0.15em 0.35em;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+/* === Lists === */
+ul, ol {
+  margin-top: 0.4em;
+  margin-bottom: 0.4em;
+}
+
+li {
+  margin-bottom: 0.2em;
+}
+
+/* === Horizontal rule === */
+hr {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 1.5em 0;
+}
+
+/* === Links === */
+a {
+  color: #063F1E;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* === Print === */
+@media print {
+  body {
+    max-width: 100%;
+    padding: 0;
+  }
+
+  a {
+    color: #063F1E;
+    text-decoration: none;
+  }
+}

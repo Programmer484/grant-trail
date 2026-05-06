@@ -1,0 +1,26 @@
+/* ========================================
+   App.css - Main Application Styles
+
+   Only global styles included here. Rest are either in src/styles or page-specific css files under src/components.
+   ======================================== */
+
+/* Wrapper for the main application layout */
+#wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Allow main content area to grow dynamically -- footer gets pushed down automatically */
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}

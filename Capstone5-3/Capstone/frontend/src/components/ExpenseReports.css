@@ -1,0 +1,1076 @@
+/* ========================================
+   EXPENSE REPORTS COMPONENT STYLES
+   ======================================== */
+.expenses-reports,
+.expenses-landing {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0.5em 1em 3em;
+}
+
+.expenses-landing h2 {
+  margin: 1rem 0 0.75rem 0;
+}
+
+/* Filter bar */
+.expense-filters-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75em;
+  background: var(--color-white);
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: var(--radius-md);
+  padding: 0.75em 1em;
+  margin: 0.75em 0 1em 0;
+  box-shadow: 0 2px 6px rgba(16,24,40,0.05);
+}
+
+/* Search input */
+.ef-search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 180px;
+  max-width: 280px;
+}
+
+.ef-search-icon {
+  position: absolute;
+  left: 0.75em;
+  color: var(--color-gray-400);
+  font-size: 0.85rem;
+  pointer-events: none;
+}
+
+.ef-search-box input {
+  width: 100%;
+  padding: 0.45em 0.75em 0.45em 2.2em;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-family: var(--font-body);
+  color: var(--color-gray-700);
+  transition: border-color var(--transition-base);
+}
+
+.ef-search-box input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+/* Filter group (icon + control) */
+.ef-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+
+.ef-group-icon {
+  color: var(--color-gray-400);
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.ef-group select,
+.ef-group input[type="date"] {
+  padding: 0.45em 0.6em;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-family: var(--font-body);
+  color: var(--color-gray-700);
+  background: var(--color-white);
+  transition: border-color var(--transition-base);
+}
+
+.ef-group select:focus,
+.ef-group input[type="date"]:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.ef-date-sep {
+  color: var(--color-gray-400);
+  font-size: 0.9rem;
+}
+
+/* Preset buttons */
+.ef-presets {
+  display: flex;
+  gap: 0.4em;
+}
+
+.ef-preset-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  padding: 0.4em 0.8em;
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: var(--font-body);
+  border: 1.5px solid var(--color-gray-200);
+  border-radius: var(--radius-sm);
+  background: var(--color-white);
+  color: var(--color-gray-600);
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.ef-preset-btn:hover {
+  border-color: var(--color-gold);
+  background: #FEF3C7;
+  color: #92400E;
+}
+
+.ef-clear-btn {
+  border-color: #EF4444;
+  color: #EF4444;
+}
+
+.ef-clear-btn:hover {
+  background: #FEF2F2;
+  border-color: #DC2626;
+  color: #DC2626;
+}
+
+/* By Grant: accordion list */
+.grant-accordion {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(0,0,0,0.1);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(16,24,40,0.06);
+}
+
+.grant-accordion-item {
+  border-bottom: 1px solid var(--color-gray-100);
+}
+
+.grant-accordion-item:last-child {
+  border-bottom: none;
+}
+
+.grant-accordion-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 1em;
+  padding: 1em 1.25em;
+  background: var(--color-white);
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--transition-base);
+  font-family: var(--font-body);
+}
+
+.grant-accordion-header:hover {
+  background: var(--color-gray-50);
+}
+
+.grant-accordion-item.expanded .grant-accordion-header {
+  background: var(--color-gray-50);
+  border-bottom: 1px solid var(--color-gray-100);
+}
+
+.accordion-grant-name {
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--color-gray-900);
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.accordion-amounts {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35em;
+  flex-shrink: 0;
+  font-size: 0.85rem;
+}
+
+.acc-amount {
+  font-weight: 700;
+  color: var(--color-gray-900);
+  font-variant-numeric: tabular-nums;
+}
+
+.acc-amount.acc-spent {
+  color: #EF4444;
+}
+
+.acc-amount.acc-remaining {
+  color: #10B981;
+}
+
+.acc-label {
+  font-size: 0.75rem;
+  color: var(--color-gray-400);
+  font-weight: 400;
+}
+
+.acc-sep {
+  color: var(--color-gray-300);
+  font-weight: 300;
+}
+
+.accordion-chevron {
+  color: var(--color-gray-400);
+  font-size: 0.9rem;
+  flex-shrink: 0;
+  transition: color var(--transition-base);
+}
+
+.grant-accordion-header:hover .accordion-chevron,
+.grant-accordion-item.expanded .accordion-chevron {
+  color: var(--color-primary);
+}
+
+.grant-accordion-body {
+  padding: 1.25em 1.5em 1.5em 1.5em;
+  background: var(--color-white);
+}
+
+.accordion-breakdown-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  margin-top: 1.25em;
+  padding: 0.6em 1.25em;
+  background: var(--color-gold);
+  color: var(--color-black);
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all var(--transition-slow);
+}
+
+.accordion-breakdown-link:hover {
+  background: var(--color-gold-dark);
+  box-shadow: 0 4px 12px rgba(216, 159, 1, 0.3);
+  transform: translateY(-1px);
+}
+
+/* Status badge */
+.status-badge {
+  display: inline-block;
+  padding: 0.25em 0.75em;
+  border-radius: var(--radius-lg);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  white-space: nowrap;
+  width: fit-content;
+}
+
+.status-badge.status-pending {
+  background-color: rgba(251, 191, 36, 0.2);
+  color: #F59E0B;
+}
+
+.status-badge.status-approved {
+  background-color: rgba(16, 185, 129, 0.2);
+  color: #10B981;
+}
+
+.status-badge.status-rejected {
+  background-color: rgba(239, 68, 68, 0.2);
+  color: #EF4444;
+}
+
+.status-badge.status-needs_changes {
+  background-color: rgba(245, 158, 11, 0.2);
+  color: #D97706;
+}
+
+.status-badge.status-submitted {
+  background-color: rgba(59, 130, 246, 0.2);
+  color: #3B82F6;
+}
+
+
+/* Expenses page header */
+.expenses-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1em;
+  flex-wrap: wrap;
+  gap: 1em;
+}
+
+
+.expenses-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.9rem;
+  min-width: 400px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.expenses-table thead {
+  background: linear-gradient(135deg, var(--color-gray-50) 0%, var(--color-gray-100) 100%);
+}
+
+.expenses-table th {
+  text-align: left;
+  padding: 0.6em 0.75em;
+  font-weight: 600;
+  color: var(--color-gray-500);
+  border-bottom: 2px solid var(--color-gray-200);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.expenses-table th:first-child {
+  padding-left: 1em;
+}
+
+.expenses-table th:last-child {
+  padding-right: 1em;
+}
+
+.expenses-table td {
+  padding: 0.5em 0.75em;
+  border-bottom: 1px solid var(--color-gray-100);
+  color: var(--color-gray-700);
+  transition: all var(--transition-base);
+}
+
+.expenses-table td:first-child {
+  padding-left: 1em;
+}
+
+.expenses-table td:last-child {
+  padding-right: 1em;
+}
+
+/* banded rows */
+.expenses-table tbody tr:nth-child(even) {
+  background: var(--color-gray-50);
+}
+
+.expenses-table tbody tr:hover {
+  background: rgba(6, 63, 30, 0.04);
+  transform: scale(1.01);
+  box-shadow: 0 2px 8px rgba(6, 63, 30, 0.08);
+}
+
+/*
+Last 3 columns are numbers, right-align the 
+text for these so they line up with the numbers
+(Disbursed, Spent, Remaining) 
+*/
+.expenses-table th:nth-child(n+2) {
+  text-align: right;
+}
+
+.expenses-table td.amount {
+  font-weight: 700;
+  color: var(--color-gray-900);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.no-expenses {
+  text-align: center;
+  color: var(--color-gray-400);
+  padding: 2em;
+  font-style: italic;
+}
+
+/* Grant details panel (expanded section in grant cards) */
+.grant-details-panel {
+  margin-top: 1.5em;
+  padding-top: 1.25em;
+  border-top: 2px solid var(--color-gray-100);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.detail-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75em;
+  padding: 0.6em 0;
+  border-bottom: 1px solid var(--color-gray-100);
+}
+
+.detail-row:last-child {
+  border-bottom: none;
+}
+
+.detail-icon {
+  color: var(--color-primary);
+  font-size: 0.9rem;
+  flex-shrink: 0;
+  margin-top: 0.15em;
+  width: 16px;
+  text-align: center;
+}
+
+.detail-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  flex-shrink: 0;
+  width: 110px;
+  padding-top: 0.05em;
+}
+
+.detail-value {
+  font-size: 0.9rem;
+  color: var(--color-gray-800);
+  font-weight: 500;
+  flex: 1;
+  line-height: 1.4;
+}
+
+.detail-value.description-text,
+.detail-value.notes-text {
+  font-style: italic;
+  color: var(--color-gray-600);
+}
+
+/* Expense-First View */
+.expense-first-view {
+  margin-top: 1.25em;
+}
+
+.expense-filters {
+  background: var(--color-white);
+  padding: 1.25em;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 6px 18px rgba(16,24,40,0.08);
+  border: 1px solid rgba(0,0,0,0.08);
+  margin-bottom: 1.25em;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 1em;
+}
+
+.filter-group svg {
+  color: var(--color-primary);
+  font-size: 1.2rem;
+}
+
+.filter-group label {
+  font-weight: 600;
+  color: var(--color-gray-700);
+  font-size: 0.95rem;
+}
+
+.filter-group select {
+  flex: 1;
+  max-width: 300px;
+  padding: 0.6em 1em;
+  border: 1px solid var(--color-gray-300);
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  color: var(--color-gray-700);
+  background: white;
+  cursor: pointer;
+  transition: all var(--transition-base);
+}
+
+.filter-group select:hover {
+  border-color: var(--color-primary);
+}
+
+.filter-group select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(6, 63, 30, 0.1);
+}
+
+.expenses-list {
+  background: var(--color-white);
+  padding: 1.5em;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 6px 18px rgba(16,24,40,0.08);
+  border: 1px solid rgba(0,0,0,0.08);
+}
+
+.expenses-list h3 {
+  margin: 0 0 1em 0;
+  font-size: 1.3rem;
+  color: var(--color-gray-900);
+  font-weight: 600;
+}
+
+.expenses-table-main {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  font-size: 0.9rem;
+}
+
+/* Fixed column widths — prevents long grant names from pushing right columns off */
+.expenses-table-main th:nth-child(1) { width: 20%; } /* Grant */
+.expenses-table-main th:nth-child(2) { width: 36%; } /* Expense */
+.expenses-table-main th:nth-child(3) { width: 16%; } /* Amount */
+.expenses-table-main th:nth-child(4) { width: 14%; } /* Date */
+.expenses-table-main th:nth-child(5) { width: 7%;  } /* Status icon */
+.expenses-table-main th:nth-child(6) { width: 7%;  } /* Action icon */
+
+.expenses-table-main thead {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  color: white;
+}
+
+.expenses-table-main th {
+  text-align: left;
+  padding: 0.7em 1em;
+  font-weight: 600;
+  border-bottom: none;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.expenses-table-main th.sortable {
+  cursor: pointer;
+  user-select: none;
+  transition: background-color var(--transition-base);
+  white-space: nowrap;
+}
+
+.expenses-table-main th.sortable:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.expenses-table-main .sort-icon {
+  font-size: 0.75rem;
+  opacity: 0.7;
+  transition: opacity var(--transition-base);
+  margin-left: 0.4em;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.expenses-table-main .sort-icon.active {
+  opacity: 1;
+}
+
+.expenses-table-main .sort-icon.inactive {
+  opacity: 0.3;
+}
+
+.expenses-table-main th.sortable:hover .sort-icon.inactive {
+  opacity: 0.5;
+}
+
+.expenses-table-main td {
+  padding: 0.6em 1em;
+  border-bottom: 1px solid var(--color-gray-200);
+  color: var(--color-gray-700);
+  vertical-align: middle;
+  transition: all var(--transition-base);
+}
+
+/* Striped rows */
+.expenses-table-main tbody tr:nth-child(even) {
+  background: var(--color-gray-50);
+}
+
+.expenses-table-main tbody tr:hover {
+  background: rgba(6, 63, 30, 0.04);
+  box-shadow: inset 4px 0 0 var(--color-primary);
+}
+
+.expenses-table-main tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/*
+Last 3 columns are numbers, right-align the 
+text for these so they line up with the numbers
+(Disbursed, Spent, Remaining) 
+*/
+.expenses-table-main th:nth-child(n+3) {
+  text-align: right;
+}
+
+.expenses-table-main td.amount {
+  font-weight: 700;
+  color: var(--color-gray-900);
+  text-align: right;
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.expenses-table-main td.date {
+  text-align: right;
+  white-space: nowrap;
+  color: var(--color-gray-500);
+}
+
+.expenses-table-main td.item-name {
+  font-weight: 600;
+  color: var(--color-gray-900);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 0;
+}
+
+/* Grant badge cell — clip to column width */
+.expenses-table-main td:nth-child(1) {
+  overflow: hidden;
+  max-width: 0;
+}
+
+.expenses-table-main td:nth-child(1) {
+  max-width: 0;
+}
+
+.expenses-table-main td:nth-child(1) .grant-badge-link {
+  display: block;
+  max-width: 100%;
+}
+
+.expenses-table-main td.er-status-cell {
+  width: 2rem;
+  text-align: center;
+  padding: 0 0.25rem;
+}
+
+.expenses-table-main td.er-action-cell {
+  width: 2.5rem;
+  text-align: center;
+  padding: 0 0.25rem;
+}
+
+.er-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35em 0.55em;
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  text-decoration: none;
+  background: var(--color-gold);
+  border: 1px solid var(--color-gold);
+  color: var(--color-black);
+  transition: all var(--transition-fast);
+}
+
+.er-action-btn:hover {
+  background: var(--color-gold-dark);
+  border-color: var(--color-gold-dark);
+}
+
+.grant-badge {
+  display: inline-block;
+  max-width: 100%;
+  padding: 4px 10px;
+  background: transparent;
+  color: var(--color-primary);
+  border: 1.5px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 18px;
+  height: 28px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-sizing: border-box;
+}
+
+.grant-badge-link {
+  text-decoration: none;
+  display: inline-block;
+  vertical-align: middle;
+  position: relative;
+  top: 2px;
+  transition: all var(--transition-base);
+}
+
+.grant-badge-link:hover .grant-badge {
+  background: var(--color-primary);
+  color: white;
+  cursor: pointer;
+}
+
+/* Responsive for expense page */
+@media (max-width: 768px) {
+  .expense-filters-bar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .ef-search-box {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .ef-group select,
+  .ef-group input[type="date"] {
+    width: 100%;
+  }
+
+  .expenses-table-main {
+    font-size: 0.8rem;
+  }
+
+  .expenses-table-main th,
+  .expenses-table-main td {
+    padding: 0.5em;
+  }
+
+  .expenses-list {
+    padding: 1em;
+  }
+}
+
+/* MOVED TO components/Footer.css */
+/*
+========================================
+            Footer
+========================================
+
+.footer-base {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  color: var(--color-cream);
+  padding: 2em 1.5em 1.5em 1.5em;
+  margin-top: 2em;
+  border-top: 2px solid var(--color-gold);
+}
+
+.footer-content {
+  max-width: 1000px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 1fr;
+  gap: 3em;
+  align-items: start;
+}
+
+.footer-section h3 {
+  margin: 0 0 0.4em 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--color-gold);
+}
+
+.footer-section h4 {
+  margin: 0 0 0.75em 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-cream);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.footer-section p {
+  margin: 0.4em 0 0 0;
+  font-size: 0.85rem;
+  color: rgba(249, 248, 246, 0.8);
+}
+
+.footer-links {
+  text-align: center;
+}
+
+.footer-links .footer-nav {
+  align-items: center;
+}
+
+.footer-contact {
+  text-align: right;
+}
+
+.footer-contact .contact-info {
+  align-items: flex-end;
+}
+
+.footer-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+}
+
+.footer-nav a {
+  color: var(--color-cream);
+  text-decoration: none;
+  font-size: 0.95rem;
+  transition: all var(--transition-base);
+  width: fit-content;
+  padding: 0.25em 0;
+}
+
+.footer-nav a:hover {
+  color: var(--color-gold);
+}
+
+.contact-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+}
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75em;
+  color: var(--color-cream);
+  text-decoration: none;
+  font-size: 0.95rem;
+  transition: all var(--transition-base);
+}
+
+.contact-item:hover {
+  color: var(--color-gold);
+}
+
+.contact-item svg {
+  font-size: 1.1rem;
+  color: var(--color-gold);
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .footer-content {
+    grid-template-columns: 1fr;
+    gap: 2em;
+    text-align: center;
+  }
+
+  .footer-nav {
+    align-items: center;
+  }
+
+  .contact-info {
+    align-items: center;
+  }
+
+  .footer-nav a:hover {
+    padding-left: 0;
+  }
+}
+*/
+
+/*
+/* MOVED TO components/Grants.css */
+/* 
+========================================
+     Grants page
+======================================== 
+*/
+
+.grants-summary {
+  padding: 0.5em 1em 1em 1em;
+}
+
+.grants-summary .summary-cards {
+  display: flex;
+  gap: 1em;
+  margin-top: 1em;
+}
+
+/* Enhanced search box */
+.search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  max-width: 300px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 1em;
+  color: var(--color-gray-500);
+  font-size: 1rem;
+  pointer-events: none;
+}
+
+.grants-toolbar .search-box input {
+  padding-left: 2.75em;
+  width: 100%;
+}
+
+/* filter tabs */
+.tabs {
+  display: flex;
+  gap: 0.5em;
+  margin-bottom: 1.5em;
+  flex-wrap: wrap;
+}
+
+.tabs button {
+  background-color: var(--color-white);
+  border: 1.5px solid var(--color-gray-200);
+  padding: 0.6em 1.25em;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: all var(--transition-base);
+  color: var(--color-gray-700);
+}
+
+.tabs button:hover {
+  border-color: var(--color-gold);
+  background-color: #FEF3C7;
+  color: #92400E;
+}
+
+.tabs .active-tab {
+  background-color: var(--color-gold);
+  border-color: var(--color-gold);
+  color: var(--color-black);
+  font-weight: 600;
+}
+
+/* grid layout for Grants */
+.grants-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1.5em;
+  margin-top: 1.5em;
+}
+
+/* card styling for grants page */
+.grant-card.grants-grant-card {
+  background: var(--color-white);
+  padding: 0;
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 6px 18px rgba(16,24,40,0.08);
+  transition: all var(--transition-slow);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.grant-card.grants-grant-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(16,24,40,0.12);
+  border-color: var(--color-gold);
+}
+
+/* Grant dates section */
+.grant-dates {
+  display: flex;
+  gap: 1em;
+  margin-top: 1em;
+  padding-top: 1em;
+  border-top: 1px solid var(--color-gray-100);
+}
+
+.date-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  flex: 1;
+}
+
+.date-icon {
+  color: var(--color-gray-500);
+  font-size: 1rem;
+}
+
+.date-item > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25em;
+}
+
+.date-label {
+  font-size: 0.75rem;
+  color: var(--color-gray-500);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.date-value {
+  font-size: 0.9rem;
+  color: var(--color-gray-900);
+  font-weight: 600;
+}
+
+/* card footer */
+.grant-card-footer {
+  padding: 1.25em 1.5em;
+  background: var(--color-gray-50);
+  border-top: 1px solid var(--color-gray-100);
+}
+
+.view-grant-btn {
+  width: 100%;
+  padding: 0.75em 1.5em;
+  background-color: var(--color-gold);
+  color: var(--color-black);
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all var(--transition-slow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+  font-family: var(--font-body);
+}
+
+.view-grant-btn:hover {
+  background-color: var(--color-gold-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(216, 159, 1, 0.3);
+}
+
+/* Responsive for grants page */
+@media (max-width: 768px) {
+  .grants-summary .summary-cards {
+    flex-direction: column;
+  }
+
+  .grants-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .search-box {
+    max-width: 100%;
+  }
+
+  .grants-toolbar {
+    flex-direction: column;
+    gap: 1em;
+  }
+
+  .left-tools {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .left-tools input,
+  .left-tools select {
+    width: 100% !important;
+  }
+}

@@ -1,0 +1,822 @@
+/* ========================================
+   GRANTS PAGE COMPONENT STYLES
+   ======================================== */
+
+/* ---- Page container — centered like admin pages ---- */
+
+.grants-page {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 1.5em 1em 3em;
+}
+
+.grants-page-header {
+  margin-bottom: 0.25em;
+}
+
+.grants-page-title {
+  font-family: var(--font-heading);
+  color: var(--color-primary);
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 0 0 0.5em 0;
+}
+
+/* Responsive: stack chips on narrow screens */
+@media (max-width: 480px) {
+  .grants-stat-strip {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25em;
+  }
+
+  .chip-divider {
+    display: none;
+  }
+
+  .stat-chip {
+    padding: 0.2em 0;
+  }
+}
+
+/* Compact summary strip */
+.grants-stat-strip {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: var(--color-white);
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: var(--radius-md);
+  padding: 0.6em 1.25em;
+  margin: 0.75em 0 0.5em 0;
+  box-shadow: 0 2px 6px rgba(16,24,40,0.05);
+  flex-wrap: wrap;
+  gap: 0.25em 0;
+}
+
+.stat-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  padding: 0.25em 1em;
+}
+
+.chip-icon {
+  font-size: 0.85rem;
+  color: var(--color-gray-400);
+  flex-shrink: 0;
+}
+
+.chip-icon.active {
+  color: #10B981;
+}
+
+.chip-icon.pending {
+  color: #F59E0B;
+}
+
+.chip-icon.needs-changes {
+  color: #F97316;
+}
+
+.chip-icon.rejected {
+  color: #EF4444;
+}
+
+.chip-value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-gray-900);
+  font-variant-numeric: tabular-nums;
+}
+
+.chip-label {
+  font-size: 0.8rem;
+  color: var(--color-gray-400);
+  font-weight: 400;
+}
+
+.chip-divider {
+  width: 1px;
+  height: 1.4em;
+  background: var(--color-gray-200);
+  flex-shrink: 0;
+  align-self: center;
+}
+
+/* Enhanced search box */
+.search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 350px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 1em;
+  color: var(--color-gray-500);
+  font-size: 1rem;
+  pointer-events: none;
+}
+
+.grants-toolbar .search-box input {
+  padding-left: 2.75em;
+  width: 100%;
+}
+
+/* Grants toolbar */
+.grants-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: var(--color-gray-50);
+  padding: 1em;
+  border-bottom: 1px solid var(--color-gray-200);
+  margin-bottom: 1em;
+}
+
+.left-tools {
+  display: flex;
+  gap: 1em;
+  align-items: center;
+}
+
+.left-tools input {
+  padding: 0.5em;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-sm);
+  width: 350px;
+  font-family: var(--font-body);
+}
+
+.left-tools select {
+  padding: 0.5em;
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+}
+
+.left-tools button {
+  padding: 0.5em 1em;
+  background-color: var(--color-primary);
+  color: var(--color-white);
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: all var(--transition-base);
+}
+
+.left-tools button:hover {
+  background-color: var(--color-primary-light);
+}
+
+.right-tools .new-grant-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  background-color: var(--color-primary);
+  color: var(--color-white);
+  padding: 0.5em 1em;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-weight: bold;
+  cursor: pointer;
+  font-family: var(--font-body);
+  text-decoration: none;
+  transition: all var(--transition-base);
+}
+
+.right-tools .new-grant-btn:hover {
+  background-color: var(--color-primary-light);
+}
+
+.new-grant-btn .plus {
+  color: var(--color-gold);
+  margin-right: 0.5em;
+  font-weight: 700;
+}
+
+/* filter tabs */
+.tabs {
+  display: flex;
+  gap: 0.5em;
+  margin-bottom: 1.5em;
+  flex-wrap: wrap;
+}
+
+.tabs button {
+  background-color: var(--color-white);
+  border: 1.5px solid var(--color-gray-200);
+  padding: 0.6em 1.25em;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: all var(--transition-base);
+  color: var(--color-gray-700);
+}
+
+.tabs button:hover {
+  border-color: var(--color-gold);
+  background-color: #FEF3C7;
+  color: #92400E;
+}
+
+.tabs .active-tab {
+  background-color: var(--color-gold);
+  border-color: var(--color-gold);
+  color: var(--color-black);
+  font-weight: 600;
+}
+
+/* grid layout for Grants */
+.grants-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1.5em;
+  margin-top: 1.5em;
+}
+
+/* card styling for grants page */
+.grant-card.grants-grant-card {
+  background: var(--color-white);
+  padding: 0;
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  transition: all var(--transition-slow);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.grant-card.grants-grant-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-xl);
+  border-color: var(--color-gold);
+}
+
+/* Grant card header */
+.grant-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75em;
+  padding: 1em 1.25em;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  color: white;
+}
+
+.grant-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.grant-title-section {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+}
+
+.grant-title-section h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: white;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.grant-title-link {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: white;
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+.grant-title-link:hover {
+  text-decoration: underline;
+  opacity: 0.9;
+}
+
+/* Grant card body */
+.grant-card-body {
+  padding: 1em 1.25em;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  flex: 1;
+}
+
+.grant-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.35em 0;
+  border-bottom: 1px solid var(--color-gray-100);
+}
+
+.grant-info-row:last-of-type {
+  border-bottom: none;
+}
+
+.info-label {
+  font-size: 0.9rem;
+  color: var(--color-gray-500);
+  font-weight: 500;
+}
+
+.info-value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-gray-900);
+}
+
+.info-value.spent {
+  color: #EF4444;
+}
+
+.info-value.remaining {
+  color: #10B981;
+}
+
+/* Detail link icon in card header */
+.grant-expand-toggle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-base);
+  font-size: 0.85rem;
+  flex-shrink: 0;
+  text-decoration: none;
+}
+
+.grant-expand-toggle:hover {
+  background: rgba(216, 159, 1, 0.35);
+}
+
+.card-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  flex-shrink: 0;
+}
+
+/* Grant details section (shown when expanded) */
+.grant-details-section {
+  margin-top: 0.75em;
+  padding-top: 0.25em;
+  border-top: 1px solid var(--color-gray-100);
+}
+
+/* Progress bar — split into two halves */
+.progress-row {
+  display: flex;
+  gap: 1.25em;
+  align-items: flex-start;
+}
+
+.progress-half {
+  flex: 1;
+}
+
+.progress-half-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-gray-400);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 0.4em 0;
+}
+
+/* Time remaining stat */
+.time-half {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.time-stat {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #10B981;
+  margin: 0;
+  padding: 0.15em 0;
+}
+
+.time-stat.warning {
+  color: #F59E0B;
+}
+
+.time-stat.expired {
+  color: #EF4444;
+}
+
+/* Progress bar */
+.progress-section {
+  margin-top: 0.75em;
+  padding-top: 0.75em;
+  border-top: 1px solid var(--color-gray-100);
+}
+
+.progress-bar {
+  height: 12px;
+  background: var(--color-gray-100);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin-bottom: 0.5em;
+}
+
+.progress-bar .fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10B981 0%, #059669 100%);
+  transition: width var(--transition-slow);
+}
+
+.progress-text {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-gray-500);
+  text-align: center;
+}
+
+/* Grant dates section */
+.grant-dates {
+  display: flex;
+  gap: 1em;
+  margin-top: 0.75em;
+  padding-top: 0.75em;
+  border-top: 1px solid var(--color-gray-100);
+}
+
+.date-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  flex: 1;
+}
+
+.date-icon {
+  color: var(--color-gray-500);
+  font-size: 1rem;
+}
+
+.date-item > div {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.35em;
+}
+
+.date-item:last-child {
+  justify-content: flex-end;
+}
+
+.date-label {
+  font-size: 0.75rem;
+  color: var(--color-gray-500);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.date-value {
+  font-size: 0.9rem;
+  color: var(--color-gray-900);
+  font-weight: 600;
+}
+
+/* card footer */
+.grant-card-footer {
+  padding: 0.75em 1.25em;
+  background: var(--color-gray-50);
+  border-top: 1px solid var(--color-gray-100);
+}
+
+.view-grant-btn {
+  width: 100%;
+  padding: 0.75em 1.5em;
+  background-color: var(--color-gold);
+  color: var(--color-black);
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all var(--transition-slow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+  font-family: var(--font-body);
+}
+
+.view-grant-btn:hover {
+  background-color: var(--color-gold-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(216, 159, 1, 0.3);
+}
+
+/* Pagination */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5em;
+  margin-top: 2.5em;
+  padding: 1.5em 0;
+}
+
+.pagination button {
+  padding: 0.75em 1.5em;
+  background-color: var(--color-white);
+  color: var(--color-gray-700);
+  border: 1.5px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all var(--transition-base);
+}
+
+.pagination button:hover:not(:disabled) {
+  background-color: var(--color-gold);
+  border-color: var(--color-gold);
+  color: var(--color-black);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(216, 159, 1, 0.2);
+}
+
+.pagination button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background-color: var(--color-gray-100);
+  color: var(--color-gray-400);
+}
+
+.pagination span {
+  font-family: var(--font-body);
+  font-weight: 600;
+  color: var(--color-gray-700);
+  font-size: 0.95rem;
+}
+
+/* ---- View toggle ---- */
+
+.right-tools {
+  display: flex;
+  align-items: center;
+  gap: 0.75em;
+}
+
+.view-toggle-btns {
+  display: flex;
+  border: 1.5px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.view-toggle-btn {
+  background: var(--color-white);
+  border: none;
+  padding: 0.45em 0.75em;
+  cursor: pointer;
+  color: var(--color-gray-500);
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.view-toggle-btn:first-child {
+  border-right: 1px solid var(--color-gray-200);
+}
+
+.view-toggle-btn.active {
+  background: var(--color-primary);
+  color: var(--color-white);
+}
+
+.view-toggle-btn:hover:not(.active) {
+  background: var(--color-gray-100);
+  color: var(--color-gray-800);
+}
+
+/* ---- Table view ---- */
+
+.grants-table-wrapper {
+  background: var(--color-white);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  margin-top: 1.5em;
+}
+
+.grants-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.9rem;
+}
+
+.grants-table thead {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+}
+
+.grants-table th {
+  text-align: left;
+  padding: 0.75em 1em;
+  font-weight: 600;
+  color: var(--color-white);
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.grants-table th.gt-th-right {
+  text-align: right;
+}
+
+.grants-table td {
+  padding: 0.7em 1em;
+  border-bottom: 1px solid var(--color-gray-100);
+  color: var(--color-gray-700);
+  vertical-align: middle;
+}
+
+.grants-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.grants-table tbody tr:nth-child(even) {
+  background: var(--color-gray-50);
+}
+
+.grants-table tbody tr:hover {
+  background: rgba(6, 63, 30, 0.04);
+}
+
+.gt-name-cell {
+  max-width: 220px;
+}
+
+.gt-name-link {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 600;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gt-name-link:hover {
+  text-decoration: underline;
+}
+
+.gt-amount-cell {
+  font-weight: 600;
+  color: var(--color-gray-800);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.gt-remaining-cell {
+  color: var(--color-success);
+  font-weight: 600;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.gt-period-cell {
+  white-space: nowrap;
+  font-size: 0.85rem;
+  color: var(--color-gray-600);
+}
+
+.gt-time-cell {
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--color-success);
+}
+
+.gt-time-cell.warning { color: var(--color-warning); }
+.gt-time-cell.expired { color: var(--color-error); }
+
+.gt-pending-cell {
+  width: 2rem;
+  text-align: center;
+  padding: 0 0.25rem;
+}
+
+.gt-actions-cell {
+  display: flex;
+  gap: 0.4em;
+  align-items: center;
+}
+
+.gt-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.35em 0.55em;
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  text-decoration: none;
+  transition: all var(--transition-fast);
+}
+
+.gt-action-btn.detail {
+  background: none;
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary);
+}
+
+.gt-action-btn.detail:hover {
+  background: var(--color-primary);
+  color: var(--color-white);
+}
+
+.gt-action-btn.expenses {
+  background: var(--color-gold);
+  border: 1px solid var(--color-gold);
+  color: var(--color-black);
+}
+
+.gt-action-btn.expenses:hover {
+  background: var(--color-gold-dark);
+  border-color: var(--color-gold-dark);
+}
+
+.gt-empty-cell {
+  text-align: center;
+  color: var(--color-gray-400);
+  font-style: italic;
+  padding: 2.5em 1em !important;
+}
+
+/* Responsive for grants page */
+@media (max-width: 768px) {
+  .grants-summary .summary-cards {
+    flex-direction: column;
+  }
+
+  .grants-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .search-box {
+    max-width: 100%;
+  }
+
+  .grants-toolbar {
+    flex-direction: column;
+    gap: 1em;
+  }
+
+  .left-tools {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .left-tools input,
+  .left-tools select {
+    width: 100% !important;
+  }
+
+  /* On mobile, table view scrolls horizontally */
+  .grants-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .right-tools {
+    justify-content: flex-end;
+    width: 100%;
+  }
+}

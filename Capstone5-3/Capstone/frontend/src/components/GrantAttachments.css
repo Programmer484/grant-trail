@@ -1,0 +1,430 @@
+/* ========================================
+   GRANT ATTACHMENTS COMPONENT
+   ======================================== */
+
+/* Root wrapper — no outer border/shadow; parent (detail-section or admin-card) provides that */
+.ga-root {
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+}
+
+/* ---- Upload Form ---- */
+
+.ga-upload-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6em;
+}
+
+.ga-upload-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 0.75em;
+  align-items: stretch;
+}
+
+/* File picker area */
+.ga-file-area {
+  min-width: 0; /* allow text truncation */
+}
+
+.ga-drop-zone {
+  border: 2px dashed var(--color-gray-300);
+  border-radius: var(--radius-md);
+  padding: 0.9em 1.2em;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2em;
+  cursor: pointer;
+  color: var(--color-gray-500);
+  font-size: 0.88rem;
+  background: var(--color-gray-50);
+  transition: border-color var(--transition-base), background var(--transition-base);
+  text-align: center;
+  height: 100%;
+  min-height: 70px;
+}
+
+.ga-drop-zone:hover,
+.ga-drop-zone:focus {
+  border-color: var(--color-primary);
+  background: #f0f5f1;
+  color: var(--color-primary);
+  outline: none;
+}
+
+.ga-drop-icon {
+  font-size: 1.25rem;
+  margin-bottom: 0.1em;
+}
+
+.ga-drop-hint {
+  font-size: 0.78rem;
+  color: var(--color-gray-400);
+}
+
+/* Selected file display */
+.ga-file-selected {
+  border: 2px solid var(--color-success);
+  border-radius: var(--radius-md);
+  padding: 0.9em 1em;
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  background: #F0FDF4;
+  min-height: 70px;
+  min-width: 0;
+}
+
+.ga-file-ok-icon {
+  color: var(--color-success);
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.ga-file-name {
+  flex: 1;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--color-gray-800);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ga-file-size {
+  font-size: 0.8rem;
+  color: var(--color-gray-500);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.ga-clear-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-gray-400);
+  padding: 0.2em;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  transition: color var(--transition-fast);
+}
+
+.ga-clear-btn:hover {
+  color: var(--color-error);
+}
+
+/* Meta column: category + description */
+.ga-meta-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4em;
+  width: 180px;
+}
+
+.ga-category-select,
+.ga-desc-input {
+  width: 100%;
+  padding: 0.5em 0.75em;
+  border: 1px solid var(--color-gray-300);
+  border-radius: var(--radius-md);
+  font-size: 0.88rem;
+  font-family: var(--font-body);
+  color: var(--color-gray-800);
+  background: var(--color-white);
+  transition: border-color var(--transition-fast);
+  box-sizing: border-box;
+}
+
+.ga-category-select:focus,
+.ga-desc-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.ga-desc-input::placeholder {
+  color: var(--color-gray-400);
+}
+
+/* Upload button */
+.ga-upload-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  padding: 0.6em 1.1em;
+  background: var(--color-primary);
+  color: var(--color-white);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 0.88rem;
+  font-weight: 600;
+  font-family: var(--font-body);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background var(--transition-fast);
+  align-self: center;
+}
+
+.ga-upload-btn:hover:not(:disabled) {
+  background: var(--color-primary-light);
+}
+
+.ga-upload-btn:disabled {
+  background: var(--color-gray-300);
+  cursor: not-allowed;
+}
+
+/* Error banner */
+.ga-error {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  color: var(--color-error);
+  font-size: 0.88rem;
+  padding: 0.5em 0.75em;
+  background: #FEF2F2;
+  border-radius: var(--radius-md);
+  border: 1px solid #FECACA;
+}
+
+.ga-error-icon {
+  flex-shrink: 0;
+}
+
+/* ---- Status messages ---- */
+
+.ga-loading,
+.ga-empty {
+  color: var(--color-gray-500);
+  font-size: 0.9rem;
+  margin: 0;
+  padding: 0.5em 0;
+}
+
+/* ---- Attachment List ---- */
+
+.ga-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+}
+
+.ga-item {
+  display: flex;
+  align-items: center;
+  gap: 1em;
+  padding: 0.75em 1em;
+  background: var(--color-gray-50);
+  border: 1px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  transition: background var(--transition-fast);
+}
+
+.ga-item:hover {
+  background: var(--color-gray-100);
+}
+
+/* Left: badge + name + desc */
+.ga-item-left {
+  display: flex;
+  align-items: center;
+  gap: 0.65em;
+  flex: 1;
+  min-width: 0;
+}
+
+.ga-item-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.ga-item-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-gray-800);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ga-item-desc {
+  font-size: 0.78rem;
+  color: var(--color-gray-500);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Right: meta + actions */
+.ga-item-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75em;
+  flex-shrink: 0;
+}
+
+.ga-item-meta {
+  font-size: 0.78rem;
+  color: var(--color-gray-400);
+  white-space: nowrap;
+}
+
+.ga-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+}
+
+/* View button */
+.ga-view-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.3em;
+  padding: 0.35em 0.8em;
+  background: none;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  color: var(--color-primary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.ga-view-btn:hover {
+  background: var(--color-primary);
+  color: var(--color-white);
+}
+
+/* Delete button */
+.ga-delete-btn {
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  color: var(--color-gray-400);
+  padding: 0.35em 0.5em;
+  cursor: pointer;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  transition: color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.ga-delete-btn:hover {
+  color: var(--color-error);
+  border-color: #FECACA;
+}
+
+/* Inline delete confirmation */
+.ga-confirm-delete {
+  display: flex;
+  align-items: center;
+  gap: 0.35em;
+  font-size: 0.82rem;
+  color: var(--color-error);
+}
+
+.ga-confirm-yes,
+.ga-confirm-no {
+  padding: 0.2em 0.55em;
+  border-radius: var(--radius-sm);
+  border: 1px solid;
+  font-size: 0.8rem;
+  font-family: var(--font-body);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.ga-confirm-yes {
+  background: var(--color-error);
+  border-color: var(--color-error);
+  color: var(--color-white);
+}
+
+.ga-confirm-yes:hover {
+  background: #dc2626;
+}
+
+.ga-confirm-no {
+  background: var(--color-white);
+  border-color: var(--color-gray-300);
+  color: var(--color-gray-600);
+}
+
+.ga-confirm-no:hover {
+  background: var(--color-gray-100);
+}
+
+/* ---- Category Badges ---- */
+
+.ga-cat-badge {
+  display: inline-block;
+  padding: 0.2em 0.55em;
+  border-radius: var(--radius-full);
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-family: var(--font-subheading);
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.ga-cat-general {
+  background: var(--color-gray-100);
+  color: var(--color-gray-600);
+}
+
+.ga-cat-proposal {
+  background: #EFF6FF;
+  color: #1D4ED8;
+}
+
+.ga-cat-budget {
+  background: #F0FDF4;
+  color: #15803D;
+}
+
+.ga-cat-report {
+  background: #FFF7ED;
+  color: #C2410C;
+}
+
+/* ---- Responsive ---- */
+
+@media (max-width: 640px) {
+  .ga-upload-row {
+    grid-template-columns: 1fr;
+  }
+
+  .ga-meta-col {
+    width: 100%;
+    flex-direction: row;
+  }
+
+  .ga-category-select {
+    flex: 0 0 auto;
+    width: 130px;
+  }
+
+  .ga-desc-input {
+    flex: 1;
+  }
+
+  .ga-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5em;
+  }
+
+  .ga-item-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

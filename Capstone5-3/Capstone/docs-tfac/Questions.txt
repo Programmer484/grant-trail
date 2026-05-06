@@ -1,0 +1,81 @@
+New User Sign-up
+================
+1. New user goes to the site and clicks on "Sign-up"
+2. User enters name, Organization, Phone, email and password
+3. Get logged into system
+4. Create new grant application
+
+Q: Can anyone sign-up and submit a grant application?
+Q: Is there a process for which users can submit a grant application? ie Do new users have to be approved by Admin before they can create grant applications?
+
+Grant Application Flow
+======================
+1. Grantee creates new grant application
+2. Enters details like, grant name, description, start date, end date, desired amount, documents detailing how the grant money will be used
+3. Grantee clicks on "Submit Application"
+4. Grant is assigned a Proposed state.
+
+5. Admin sees grant under "Applications" - is able to see grant details and the proposal
+6. Admin can do one of the following
+	a. Approved - Grant goes into "Approved" state
+	b. Need More info - Admin provides a comment or info on what additional info is required
+	c. Rejected - Admin provides comment on why grant was rejected
+
+Grants with Need More Info
+==========================
+1. Grantee can view these grants in their Grants page
+2. Grantee can edit existing grant change fields, upload more/different docs and submit
+3. Grant is set to "Proposed" state and goes to Admin
+4. Admin sees grant under "Applications" - is able to see grant details and the proposal, including previous states
+5. Admin takes action
+
+Grants Rejected
+================
+1. Grantee can view these grants in their Grants page
+2. Grantee cannot edit existing grant or change fields. They can view the comment from Admin as to why the grant was rejected
+3. No other actions are possible on the grant
+
+Grants Approved
+===============
+1. Grantee creates 1 or more Budget_Items under the grant, each allocated some portion of the total grant amount
+	a. Total amount across budgets cannot exceed Grant amount.
+2. Each Budget_Item has a Name, allocated amount, description -- anything else?
+3. Grantee can submit multiple Expenses for each Budget_item. Total expenses roll-up under a Budget_item. Total expenses across Budget_Items rollup under the Grant.
+4. Each Expense item has a description, date of expense, amount & receipt -- anything else needed here like Vendor or how-paid (card, cash etc)?
+
+Questions:
+a. Does Admin have to approve each Budget-Item within a Grant?
+b. Does Admin have to approve each expense item submitted?
+c. Can Grantee edit an expense item after submission or only allow delete and new submission?
+d. Can Budget-Item be edited after creation? If so, can amount allocated be changed?
+
+
+Subscriptions
+=============
+To allow the above functionality to work for different "non-profits", the system has to be built to support multi-tenancy,where TFAC is one of the tenants/subscribers.
+All the Admins mentioned above become Admins only for grants managed by TFAC.
+Other subscribers would have their own (tenant) admins.
+
+How would such new subscribers (tenants) be added?
+We'll need a super-admin and a new tenant flow.
+
+New Subscriber applies to use the site through a new Subsciber flow. New subscriber gets approved by the superadmin (potentially from TFAC).
+Any new user coming to the site either comes to a subscriber-specific URL or during sign-up has to choose from a list of existing Subscribers/Tenants.
+This also means that if a grantee signs up to one subscriber, they could potentially subscribe to a second or more subscribers. So we need to build a subscriber picker for users that belong to multiple subscibers.
+
+
+Scale & Size
+============
+1. Total number of grantees in TFAC currently.
+	a. Expected growth per year
+2. Average number of grants per grantee
+	a. Max number of grants any grantee has today 
+	b. What is an acceptable number of max grants? 50/100/1,000/10,000
+3. Average number of budget_items per grant
+	a. Max number of budget_items any grant has today
+	b. What is an acceptable number of max budget items? 50/100/500/1,000+
+4. Average number of expense items per budget
+	a. Max number of expense items any budget has today
+	b. What is an acceptable number of max expenses? 50/100/500/1,000+
+5. What is an average duration of a grant? Min and Max?
+

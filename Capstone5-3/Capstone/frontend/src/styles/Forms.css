@@ -1,0 +1,538 @@
+/* ========================================
+   FORMS AND MODALS STYLES
+   ======================================== */
+/* 
+========================================
+   Modal Dialog
+======================================== 
+*/
+
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1em;
+  animation: fadeIn var(--transition-base);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-container {
+  background: var(--color-white);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideUp var(--transition-slow);
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Modal Header */
+.modal-header {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  color: white;
+  padding: 1.2em 1.75em;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: var(--radius-lg) 12px 0 0;
+}
+
+.modal-header-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75em;
+}
+
+.modal-header-content .modal-icon {
+  font-size: 1.5rem;
+  color: var(--color-gold);
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.35rem;
+  color: white;
+}
+
+.modal-close-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  flex-shrink: 0;
+}
+
+.modal-close-btn svg {
+  color: white;
+  font-size: 1.25rem;
+}
+
+.modal-close-btn:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+/* Modal Body */
+.modal-body {
+  padding: 1.5em 1.75em;
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+}
+
+.modal-form .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4em;
+}
+
+/* Form row for side-by-side fields - else card is too tall */
+.modal-form .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1em;
+}
+
+.modal-form .form-group label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+
+.modal-form .form-group label svg {
+  color: var(--color-gold);
+}
+
+.modal-form input[type="text"],
+.modal-form input[type="number"],
+.modal-form input[type="date"],
+.modal-form textarea {
+  width: 100%;
+  padding: 0.7em 1em;
+  border: 1.5px solid #DDD;
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  font-family: var(--font-body);
+  transition: all var(--transition-base);
+  box-sizing: border-box;
+}
+
+.modal-form input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(6, 63, 30, 0.1);
+}
+
+/* 
+Dollar sign seems to overlap with number
+pad it to fix the issue
+*/
+.modal-form .input-with-prefix input {
+  padding-left: 2.75em !important;
+}
+
+/* Input prefix positioning (e.g., $ sign inside input) */
+.modal-form .input-with-prefix {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.modal-form .input-prefix {
+  position: absolute;
+  left: 1em;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-gray-500);
+  pointer-events: none;
+}
+
+/* Budget information box */
+.budget-info-box {
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  border: 1px solid var(--color-gray-300);
+  border-radius: var(--radius-md);
+  padding: 0.75em;
+  margin-bottom: 0.5em;
+}
+
+.budget-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.4em 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.budget-row:last-child {
+  border-bottom: none;
+  padding-top: 0.5em;
+  margin-top: 0.15em;
+  border-top: 2px solid rgba(6, 63, 30, 0.2);
+}
+
+.budget-label {
+  font-size: 0.9rem;
+  color: var(--color-gray-900);
+  font-weight: 500;
+}
+
+.budget-value {
+  font-size: 1rem;
+  color: var(--color-gray-900);
+  font-weight: 600;
+}
+
+.budget-row.available .budget-label {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.budget-value.highlight {
+  color: var(--color-primary);
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.info-note {
+  background: #F0F9FF;
+  border: 1px solid #BAE6FD;
+  border-left: 4px solid #0284C7;
+  padding: 0.75em;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  color: var(--color-gray-700);
+  line-height: 1.4;
+}
+
+.info-note strong {
+  color: var(--color-primary);
+}
+
+/* Modal Footer */
+.modal-footer {
+  padding: 1.25em 1.75em;
+  background: var(--color-gray-50);
+  border-top: 1px solid var(--color-gray-200);
+  display: flex;
+  gap: 1em;
+  border-radius: 0 0 12px 12px;
+}
+
+.modal-footer button {
+  flex: 1;
+  padding: 0.75em 1.25em;
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-slow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+  border: none;
+}
+
+.modal-footer .btn-cancel {
+  background: var(--color-gray-100);
+  color: var(--color-gray-700);
+  border: 1.5px solid var(--color-gray-300) !important;
+}
+
+.modal-footer .btn-cancel:hover:not(:disabled) {
+  background: var(--color-gray-200);
+  border-color: var(--color-gray-400) !important;
+}
+
+.modal-footer .btn-submit {
+  background-color: var(--color-primary);
+  color: white;
+  box-shadow: 0 4px 12px rgba(6, 63, 30, 0.2);
+}
+
+.modal-footer .btn-submit:hover:not(:disabled) {
+  background-color: var(--color-primary-light);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(6, 63, 30, 0.3);
+}
+
+.modal-footer .btn-submit:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.modal-footer button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Danger button — used by ConfirmDialog */
+.modal-footer .btn-danger {
+  background-color: #c0392b;
+  color: white;
+  box-shadow: 0 4px 12px rgba(192, 57, 43, 0.25);
+}
+
+.modal-footer .btn-danger:hover:not(:disabled) {
+  background-color: #a93226;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(192, 57, 43, 0.35);
+}
+
+.modal-footer .btn-danger:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* ConfirmDialog — smaller container, warning header tint */
+.modal-container.confirm-dialog {
+  max-width: 420px;
+}
+
+.confirm-header {
+  background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
+}
+
+.confirm-icon {
+  color: #fff;
+}
+
+.confirm-body {
+  padding: 1.75em;
+  font-size: 0.975rem;
+  color: var(--color-gray-700, #444);
+  line-height: 1.6;
+}
+
+/* Expense modal two-column split */
+.expense-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1em;
+  align-items: stretch;
+}
+
+.expense-fields-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75em;
+}
+
+.expense-receipt-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.receipt-form-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.receipt-form-group .receipt-upload-area {
+  flex: 1;
+  justify-content: center;
+}
+
+.receipt-form-group .receipt-preview {
+  flex: 1;
+}
+
+/* Receipt upload area */
+.receipt-upload-area {
+  border: 2px dashed var(--color-gray-300);
+  border-radius: var(--radius-md);
+  padding: 1.25em 1em;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35em;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  background: var(--color-gray-50);
+  text-align: center;
+}
+
+.receipt-upload-area:hover,
+.receipt-upload-area:focus {
+  border-color: var(--color-primary);
+  background: rgba(6, 63, 30, 0.04);
+  outline: none;
+}
+
+.receipt-upload-icon {
+  font-size: 1.5rem;
+  color: var(--color-gray-400);
+}
+
+.receipt-upload-area:hover .receipt-upload-icon,
+.receipt-upload-area:focus .receipt-upload-icon {
+  color: var(--color-primary);
+}
+
+.receipt-upload-text {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-gray-700);
+}
+
+.receipt-upload-hint {
+  font-size: 0.8rem;
+  color: var(--color-gray-400);
+}
+
+/* Receipt file preview (after selection) */
+.receipt-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+  border: 1.5px solid #86EFAC;
+  border-radius: var(--radius-md);
+  padding: 1em 0.9em;
+  background: #F0FDF4;
+  text-align: center;
+}
+
+.receipt-check-icon {
+  color: #16A34A;
+  font-size: 1.6rem;
+}
+
+.receipt-file-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15em;
+  align-items: center;
+}
+
+.receipt-filename {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-gray-800);
+}
+
+.receipt-filesize {
+  font-size: 0.78rem;
+  color: var(--color-gray-500);
+}
+
+.receipt-clear-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-gray-400);
+  padding: 0.25em;
+  display: flex;
+  align-items: center;
+  transition: color var(--transition-base);
+  flex-shrink: 0;
+}
+
+.receipt-clear-btn:hover {
+  color: #DC2626;
+}
+
+.receipt-required-mark {
+  color: #DC2626;
+  font-weight: 700;
+}
+
+/* Existing receipt (edit mode) */
+.receipt-preview.existing-receipt {
+  border-color: var(--color-gold);
+  background: #FFFBEB;
+}
+
+.receipt-check-icon.existing {
+  color: var(--color-gold-dark);
+}
+
+.receipt-replace-btn {
+  background: none;
+  border: 1px solid var(--color-gold);
+  border-radius: var(--radius-sm);
+  padding: 0.3em 0.75em;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-gold-dark);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all var(--transition-base);
+}
+
+.receipt-replace-btn:hover {
+  background: var(--color-gold);
+  color: var(--color-black);
+}
+
+/* Responsive Modal */
+@media (max-width: 768px) {
+  .modal-backdrop {
+    padding: 0;
+  }
+
+  .modal-container {
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .modal-header {
+    border-radius: 0;
+  }
+
+  .modal-footer {
+    border-radius: 0;
+    flex-direction: column;
+  }
+
+  .modal-body {
+    padding: 1.5em;
+  }
+
+  .modal-form .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .expense-split {
+    grid-template-columns: 1fr;
+  }
+}
+

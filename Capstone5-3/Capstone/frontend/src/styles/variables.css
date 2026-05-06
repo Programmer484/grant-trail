@@ -1,0 +1,79 @@
+/* ========================================
+   CSS VARIABLES - Design Tokens
+   ======================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Montserrat:wght@400;500;600;700&family=Dancing+Script:wght@400;700&display=swap');
+
+:root {
+  /* ===== Brand Colors ===== */
+  --color-primary: #063F1E;
+  --color-primary-light: #0a5428;
+  --color-primary-dark: #042810;
+  --color-gold: #D89F01;
+  --color-gold-dark: #c28d01;
+  --color-cream: #F9F8F6;
+
+  /* ===== Accent Colors (Active Scheme: All Shades of Green) ===== */
+  --accent-budget: #14532D;
+  --accent-spent: #15803D;
+  --accent-remaining: #16A34A;
+  --accent-percent: #22C55E;
+  --accent-total-grants: #065F46;
+  --accent-under-review: #047857;
+  --accent-needs-changes: #D97706;
+  --accent-approved: #059669;
+  --accent-funding: #063F1E;
+
+  /* ===== Semantic Colors ===== */
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
+  --color-info: #3B82F6;
+
+  /* ===== Neutral Colors ===== */
+  --color-white: #FFFFFF;
+  --color-black: #222222;
+  --color-gray-50: #F9FAFB;
+  --color-gray-100: #F3F4F6;
+  --color-gray-200: #E3E3E3;
+  --color-gray-300: #D1D5DB;
+  --color-gray-400: #9CA3AF;
+  --color-gray-500: #6B7280;
+  --color-gray-600: #4B5563;
+  --color-gray-700: #374151;
+  --color-gray-800: #1F2937;
+  --color-gray-900: #111827;
+
+  /* ===== Typography ===== */
+  --font-heading: 'Libre Baskerville', Georgia, serif;
+  --font-subheading: 'Montserrat', Arial, sans-serif;  /* use with font-weight: 700 */
+  --font-body: 'Montserrat', Arial, sans-serif;
+  --font-decorative: 'Dancing Script', cursive;        /* use sparingly for accents/quotes */
+
+  /* ===== Spacing ===== */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+
+  /* ===== Border Radius ===== */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* ===== Shadows ===== */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 6px 18px rgba(16, 24, 40, 0.08);
+  --shadow-xl: 0 12px 24px rgba(16, 24, 40, 0.12);
+
+  /* ===== Transitions ===== */
+  --transition-fast: 0.15s ease;
+  --transition-base: 0.2s ease;
+  --transition-slow: 0.3s ease;
+}

@@ -1,0 +1,362 @@
+/*========================================
+   New Grant Form
+======================================== 
+*/
+
+.create-grant-page {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2em 1em;
+  background: var(--color-cream);
+}
+
+.create-grant-container {
+  background: var(--color-white);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 6px 18px rgba(16, 24, 40, 0.12);
+  max-width: 700px;
+  width: 100%;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.form-header {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+  color: white;
+  padding: 2em;
+  display: flex;
+  align-items: center;
+  gap: 1.25em;
+}
+
+.form-header .header-icon {
+  font-size: 2.5rem;
+  color: var(--color-gold);
+}
+
+.form-header h2 {
+  margin: 0;
+  font-size: 1.8rem;
+  color: white;
+}
+
+.form-subtitle {
+  margin: 0.5em 0 0 0;
+  font-size: 0.95rem;
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 400;
+}
+
+.grant-form {
+  padding: 2em;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5em;
+}
+
+.grant-form .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5em;
+}
+
+/* 
+Form row for side-by-side fields - else card is too tall
+*/
+.grant-form .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1em;
+}
+
+.grant-form .form-group label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+
+.grant-form .form-group label svg {
+  color: var(--color-gold);
+  font-size: 1rem;
+}
+
+.grant-form input[type="text"],
+.grant-form input[type="date"],
+.grant-form input[type="number"],
+.grant-form textarea {
+  width: 100%;
+  padding: 0.7em 1em;
+  border: 1.5px solid var(--color-gray-200);
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  font-family: var(--font-body);
+  transition: all var(--transition-base);
+  box-sizing: border-box;
+  background: white;
+}
+
+.grant-form input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(6, 63, 30, 0.1);
+}
+
+/* Fix dollar sign overlap in grant form */
+.grant-form .input-with-prefix input {
+  padding-left: 2.75em !important;
+}
+
+.input-with-prefix {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-prefix {
+  position: absolute;
+  left: 1em;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-gray-500);
+  pointer-events: none;
+}
+
+.input-with-prefix input {
+  padding-left: 2.5em;
+}
+
+.field-hint {
+  font-size: 0.85rem;
+  color: var(--color-gray-500);
+  font-style: italic;
+  margin-top: 0.25em;
+}
+
+/* Info Box */
+.info-box {
+  background: rgba(6, 63, 30, 0.05);
+  border: 1px solid var(--color-gray-200);
+  border-left: 4px solid var(--color-primary);
+  padding: 1.25em;
+  border-radius: var(--radius-md);
+  display: flex;
+  gap: 1em;
+  align-items: flex-start;
+}
+
+.info-box svg {
+  font-size: 1.5rem;
+  color: var(--color-primary);
+  flex-shrink: 0;
+  margin-top: 0.125em;
+}
+
+.info-box strong {
+  display: block;
+  margin-bottom: 0.5em;
+  color: var(--color-primary);
+  font-size: 0.95rem;
+}
+
+.info-box p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--color-gray-700);
+  line-height: 1.5;
+}
+
+/* Warning variant of info box (edit/resubmit mode) */
+.info-box.info-box-warning {
+  background: rgba(217, 119, 6, 0.07);
+  border-color: rgba(217, 119, 6, 0.35);
+  border-left-color: #D97706;
+}
+
+.info-box.info-box-warning svg {
+  color: #D97706;
+}
+
+.info-box.info-box-warning strong {
+  color: #92400E;
+}
+
+.form-tip {
+  font-size: 0.82rem;
+  color: var(--color-gray-500);
+  margin: 0;
+  padding: 0.5em 0;
+}
+
+/* Validation errors shown at bottom of form */
+.form-error {
+  background: #FEE2E2;
+  border: 1px solid #FCA5A5;
+  border-left: 4px solid #EF4444;
+  color: #991B1B;
+  padding: 1em 1.25em;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  gap: 0.75em;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.form-error svg {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+/* Form Actions */
+.form-actions {
+  display: flex;
+  gap: 1em;
+  margin-top: 0.25em;
+  padding-top: 0.75em;
+  border-top: 1px solid var(--color-gray-200);
+}
+
+.form-actions button {
+  flex: 1;
+  padding: 0.9em 1.75em;
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-slow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+  border: none;
+}
+
+.btn-cancel {
+  background: var(--color-gray-100);
+  color: var(--color-gray-700);
+  border: 1.5px solid var(--color-gray-300) !important;
+}
+
+.btn-cancel:hover:not(:disabled) {
+  background: var(--color-gray-200);
+  border-color: var(--color-gray-400) !important;
+}
+
+.btn-submit {
+  background-color: var(--color-primary);
+  color: white;
+  box-shadow: 0 4px 12px rgba(6, 63, 30, 0.2);
+}
+
+.btn-submit:hover:not(:disabled) {
+  background-color: var(--color-primary-light);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(6, 63, 30, 0.3);
+}
+
+.btn-submit:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.form-actions button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Success State */
+.create-grant-success {
+  background: var(--color-white);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 6px 18px rgba(16, 24, 40, 0.12);
+  max-width: 500px;
+  width: 100%;
+  padding: 3em 2em;
+  text-align: center;
+  margin: 2em auto;
+}
+
+.success-icon {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 1.5em auto;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  animation: successPulse 0.6s ease;
+}
+
+@keyframes successPulse {
+  0% {
+    transform: scale(0);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.create-grant-success h2 {
+  margin: 0 0 0.75em 0;
+  color: var(--color-primary);
+  font-size: 1.75rem;
+}
+
+.create-grant-success p {
+  margin: 0.5em 0;
+  color: var(--color-gray-500);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.redirect-message {
+  margin-top: 1.5em !important;
+  font-style: italic;
+  color: var(--color-gray-400) !important;
+  font-size: 0.9rem !important;
+}
+
+/* Responsive for create grant form */
+@media (max-width: 768px) {
+  .create-grant-page {
+    padding: 1em 0.5em;
+  }
+
+  .form-header {
+    padding: 1.5em;
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .form-header h2 {
+    font-size: 1.5rem;
+  }
+
+  .grant-form {
+    padding: 1.5em;
+  }
+
+  .grant-form .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .form-actions button {
+    width: 100%;
+  }
+}
+

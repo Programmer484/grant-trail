@@ -1,0 +1,42 @@
+# Backend-specific .gitignore
+
+# Database credentials and connection strings
+.env
+.env.local
+.env.production
+database-credentials.txt
+connection-strings.txt
+
+# Database dumps with sensitive data
+*-dump.sql
+*-backup.sql
+backup-*.sql
+
+# Local database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Query results and exports
+query-results/
+exports/
+*.csv
+
+# Logs
+*.log
+
+# Temporary SQL files
+*-temp.sql
+*-test.sql
+scratch.sql
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*~

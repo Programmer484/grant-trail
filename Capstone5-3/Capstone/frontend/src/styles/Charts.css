@@ -1,0 +1,38 @@
+/* ========================================
+   SHARED CHART STYLES
+   ======================================== */
+
+.charts-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1em;
+  margin: 1em 0;
+}
+
+.chart-card {
+  background: var(--color-white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid rgba(0,0,0,0.06);
+  padding: 1.5em;
+}
+
+.chart-card-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin: 0 0 1em 0;
+}
+
+.chart-empty {
+  text-align: center;
+  color: var(--color-gray-400);
+  font-style: italic;
+  padding: 2em 1em;
+}
+
+@media (max-width: 768px) {
+  .charts-row {
+    grid-template-columns: 1fr;
+  }
+}

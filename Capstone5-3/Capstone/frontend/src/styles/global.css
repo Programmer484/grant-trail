@@ -1,0 +1,30 @@
+/* ========================================
+   GLOBAL STYLES
+   Base styles applied to the entire application
+   ======================================== */
+
+/* not having this causes page content to shift when scrollbar appears/disappears */
+html {
+  scrollbar-gutter: stable;
+}
+
+body {
+  font-family: var(--font-body);
+  margin: 0;
+  background-color: var(--color-cream);
+  color: var(--color-black);
+}
+
+input, textarea, select, button {
+  font-family: var(--font-body);
+}
+
+input[type="date"],
+input[type="date"]::-webkit-datetime-edit,
+input[type="date"]::-webkit-datetime-edit-fields-wrapper {
+  font-family: var(--font-body);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}

@@ -1,0 +1,55 @@
+/* ========================================
+   UTILITY STYLES
+   Global utility classes and typography
+   ======================================== */
+
+.page-title {
+  font-family: var(--font-heading);
+  color: var(--color-primary);
+  text-shadow: 1px 1px 0 var(--color-gray-200);
+  margin: 1.25rem 1em 0.75rem 1em; 
+  font-size: 1.6rem; 
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  line-height: 1.1;
+}
+
+h2 {
+  font-family: var(--font-heading);
+  color: var(--color-primary);
+  font-size: 1.5rem; 
+  margin: 1rem 0 0.75rem 0; 
+  line-height: 1.15;
+}
+
+/* Common button styles */
+button {
+  font-family: var(--font-body);
+}
+
+/* Status badges */
+.status {
+  padding: 0.25em 0.5em;
+  border-radius: var(--radius-sm);
+  font-weight: bold;
+}
+
+.status.submitted {
+  background-color: var(--color-info);
+  color: var(--color-white);
+}
+
+.status.approved {
+  background-color: var(--color-success);
+  color: var(--color-white);
+}
+
+.status.rejected {
+  background-color: var(--color-error);
+  color: var(--color-white);
+}
+
+.status.under-review {
+  background-color: var(--color-warning);
+  color: var(--color-black);
+}
