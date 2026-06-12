@@ -514,7 +514,7 @@ Several things happen automatically in the database when you insert or update a 
 
 This is why you won't find code in the frontend that manually inserts into `grant_status_history` — the trigger handles it.
 
-**Schema file:** `backend/01-Complete-Fresh-Setup.sql` (Section 4: Triggers)
+**Schema file:** `backend/01-Complete-Fresh-Setup.sql` (SECTION 2: FUNCTIONS & TRIGGERS)
 
 ---
 
@@ -655,32 +655,35 @@ Clicking anywhere else (or a different delete button) doesn't reset the state, b
 
 ---
 
-## 2.8 `Set` for O(1) Membership Lookup
+## 2.8 `Set` for O(1) Pending Status Lookup
 
-`ExpenseReports.js` fetches receipt data once and stores which expense IDs have receipts as a JavaScript `Set`. This avoids scanning an array for every row in the expense table when rendering:
+`Grants.js` fetches pending budget items and expenses and stores which grant IDs have pending items as a JavaScript `Set`. This avoids scanning an array for every row in the grants list/table when rendering:
 
 ```js
 // State
-const [expensesWithReceipt, setExpensesWithReceipt] = useState(new Set());
+const [grantsWithPendingItems, setGrantsWithPendingItems] = useState(new Set());
 
-// Fetch once after expenses load
-const { data: receiptData } = await supabase
-  .from('receipts')
-  .select('expense_id')
-  .in('expense_id', itemData.map(i => i.id));
-
-setExpensesWithReceipt(new Set(receiptData.map(r => r.expense_id)));
+// Fetch once after grants load
+const [{ data: pendingBi }, { data: pendingExp }] = await Promise.all([
+  supabase.from('budget_items').select('grant_id').in('grant_id', grantIds).neq('status', 'approved'),
+  supabase.from('expenses').select('grant_id').in('grant_id', grantIds).neq('status', 'approved'),
+]);
+setGrantsWithPendingItems(new Set([
+  ...(pendingBi || []).map(r => r.grant_id),
+  ...(pendingExp || []).map(r => r.grant_id),
+]));
 
 // In table render — each row is O(1) instead of O(n)
-{expensesWithReceipt.has(item.id)
-  ? <Link>View receipt</Link>
-  : <span>—</span>
-}
+{grantsWithPendingItems.has(grant.id) && (
+  <span className="grant-pending-flag" title="Has budget items or expenses pending admin approval">
+    <FaClock />
+  </span>
+)}
 ```
 
-A `Set` lookup (`has()`) is O(1). An array scan (`array.find()`) is O(n). For tables with hundreds of rows, Sets are noticeably faster.
+A `Set` lookup (`has()`) is O(1). An array scan (`array.find()`) is O(n). For lists with many rows, Sets are noticeably faster.
 
-**File:** `ExpenseReports.js`
+**File:** `Grants.js`
 
 ---
 

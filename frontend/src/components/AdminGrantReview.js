@@ -90,7 +90,7 @@ function AdminGrantReview({ session }) {
         .select('*')
         .eq('id', id)
         .single();
-      if (gErr) throw gErr;
+      if (gErr || !g) throw gErr || new Error('Grant not found.');
       setGrant(g);
       setDisbursedInput(g.disbursed_funds != null ? g.disbursed_funds.toString() : '');
 

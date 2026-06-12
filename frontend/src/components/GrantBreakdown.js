@@ -39,6 +39,7 @@ function GrantBreakdown({ session }) {
   const { id } = useParams();
   const [grant, setGrant] = useState(null);
   const [budgetItems, setBudgetItems] = useState([]);
+  const [error, setError] = useState("");
   const [expenses, setExpenses] = useState([]);
   const [expanded, setExpanded] = useState({});
   const [receiptMap, setReceiptMap] = useState({}); // expense_id → receipt_files[0]
@@ -65,7 +66,11 @@ function GrantBreakdown({ session }) {
       .eq("user_id", session.userRecord.id)
       .single();
 
-    if (!grantError) setGrant(grantData);
+    if (grantError || !grantData) {
+      setError("Grant not found.");
+      return;
+    }
+    setGrant(grantData);
 
     const { data: biData } = await supabase
       .from("budget_items")
@@ -137,6 +142,7 @@ function GrantBreakdown({ session }) {
     window.open(data.signedUrl, '_blank');
   };
 
+  if (error) return <div className="detail-error" style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-error)' }}>{error}</div>;
   if (!grant) return <p>Loading grant details...</p>;
 
   // Grant-level totals — computed from freshly-fetched budgetItems so they

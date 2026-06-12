@@ -44,7 +44,7 @@ function GrantDetail({ session }) {
         .eq('id', id)
         .single();
 
-      if (grantError) {
+      if (grantError || !grantData) {
         setError('Grant not found.');
         setLoading(false);
         return;
