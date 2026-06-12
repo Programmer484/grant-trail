@@ -106,7 +106,7 @@ Do **not** use the `service_role` key in the frontend — it bypasses all securi
 4. Click **Run**
 
 This creates:
-- All 13 tables with indexes and constraints (including `status` columns on `budget_items` and `expenses`, and `notifications` with realtime)
+- All 19 tables with indexes and constraints (including `status` columns on `budget_items` and `expenses`, and `notifications` with realtime)
 - All triggers (totals, status history, audit log — with no-op UPDATE guard)
 - Tenant auto-populate triggers, auto-approval triggers, role enforcement trigger
 - The `is_admin()` helper function
@@ -114,7 +114,7 @@ This creates:
 - RLS policies on every table
 - Two storage buckets: `receipts` and `grant-documents`
 
-**Verification:** The script ends with two SELECT statements. You should see 13 table names returned, and 2 storage bucket rows.
+**Verification:** The script ends with two SELECT statements. You should see 19 table names returned, and 2 storage bucket rows.
 
 If you see errors, check that you're running on a clean database (no conflicting tables). If needed, run `00-Full-Teardown.sql` first.
 

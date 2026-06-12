@@ -296,7 +296,7 @@ With multi-tenancy, a new user needs to be assigned to a tenant. Options:
 | Area | Size |
 |------|------|
 | New tables (`tenants`, `tenant_settings`) | Small |
-| `tenant_id` column on 10 tables | Small per table, tedious in bulk |
+| `tenant_id` column on 11 tables | Small per table, tedious in bulk |
 | RLS policy rewrite (~25 policies) | Large |
 | `is_admin()` + `current_tenant_id()` functions | Small |
 | Auth hook (JWT claim, optional) | Small |
