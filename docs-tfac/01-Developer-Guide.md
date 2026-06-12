@@ -203,10 +203,8 @@ grant-trail/
         │
         ├── hooks/
         │   └── useGrantee.js     # Custom hook: fetch current user's DB record
-        │
         ├── lib/
         │   └── billing.js        # Stripe billing helpers: checkout, portal, membership status
-        │
         └── styles/
             ├── variables.css     # CSS custom properties (colors, spacing, fonts)
             ├── global.css        # Base element resets
@@ -224,19 +222,39 @@ grant-trail/
 |-----|-----------|----------------|
 | `/login` | Login.js | Public |
 | `/signup` | SignUpClean.js | Public |
-| `/` | Main.js | Grantee |
-| `/grants` | Grants.js | Grantee |
-| `/grants/new` | CreateGrant.js | Grantee |
+| `/reset-password` | ResetPassword.js | Public |
+| `/` | LandingPage.js (logged-out) or redirect (logged-in) | Everyone — smart redirect based on role + subscription |
+| `/home` | LandingPage.js | Authenticated — used as the subscription paywall landing |
+| `/complete-profile` | CompleteProfile.js | Auth users who signed up but have no `users` table record yet |
+| `/grants` | Grants.js | Grantee (Basic+ subscription required) |
+| `/grants/new` | CreateGrant.js | Grantee (Basic+ subscription required) |
 | `/grants/:id` | GrantDetail.js | Grantee (own grants only) |
+| `/grants/:id/edit` | CreateGrant.js | Grantee (own grants only) |
 | `/grants/:id/breakdown` | GrantBreakdown.js | Grantee (own grants only) |
-| `/expenses` | ExpenseReports.js | Grantee |
-| `/admin` | AdminDashboard.js | Admin |
+| `/expenses` | ExpenseReports.js | Grantee (Basic+ subscription required) |
+| `/subscription` | SubscriptionPage.js | Authenticated (any role) |
+| `/admin` | AdminDashboard.js | Admin (Premium subscription required) |
 | `/admin/grants` | AdminGrantList.js | Admin |
 | `/admin/grants/:id` | AdminGrantReview.js | Admin |
 | `/admin/audit` | AdminAuditLog.js | Admin |
 | `/admin/users` | AdminUserList.js | Admin |
+| `/admin/settings` | AdminSettings.js | Admin |
+| `/super/tenants` | TenantManagement.js | Super Admin only |
 
-Route protection is in `App.js`. Any unauthenticated user is redirected to `/login`. Admins are redirected to `/admin` when they try to access `/`. Access control beyond routing is enforced by Supabase RLS policies on the database.
+**How the `/` route works:** The root path is a smart redirect handled in `App.js`. The destination depends on the user's state:
+
+| State | Redirects to |
+|-------|-------------|
+| Not logged in | Shows LandingPage |
+| Logged in, no `users` profile | `/complete-profile` |
+| Super admin | `/super/tenants` |
+| No active subscription | `/home` (paywall) |
+| Admin with subscription | `/admin` |
+| Grantee with subscription | `/` (Main.js dashboard) |
+
+**Subscription paywall:** Grantees need a Basic+ membership and admins need a Premium membership to access their respective dashboards. Users without the required subscription are redirected to `/home` which shows the LandingPage with upgrade prompts. The `/subscription` page lets users manage their Stripe membership.
+
+**Route protection** is in `App.js`. Access control beyond routing is enforced by Supabase RLS policies on the database.
 
 ---
 
