@@ -374,16 +374,18 @@ For full column-level detail see [`04-Database-Schema.md`](04-Database-Schema.md
 
 ## 1.10 Environment Variables
 
-Create `frontend/.env.local` for local development. This file is git-ignored.
+Create `frontend/.env.local` for local development. This file is git-ignored. Use `frontend/.env.example` (committed to the repo) as a template.
 
-| Variable | Required | Where to find it |
-|----------|----------|------------------|
-| `REACT_APP_SUPABASE_URL` | Yes | Supabase Dashboard → Project Settings → API → Project URL |
-| `REACT_APP_SUPABASE_KEY` | Yes | Supabase Dashboard → Project Settings → API → anon / public key |
+| Variable | Required | Used by | Where to find it |
+|----------|----------|---------|-----------------|
+| `REACT_APP_SUPABASE_URL` | Yes | `supabaseClient.js`, `lib/billing.js` | Supabase Dashboard → Project Settings → API → Project URL |
+| `REACT_APP_SUPABASE_KEY` | Yes | `supabaseClient.js`, `lib/billing.js` | Supabase Dashboard → Project Settings → API → anon / public key |
 
-**Important:** Variables must start with `REACT_APP_` or they will be invisible to the app. They are baked into the JavaScript bundle at build time — restart the dev server after changing `.env.local`. Changing `.env.local` requires restarting `npm start` (in development) or re-running `npm run build` (for production). The Supabase URL and anon key end up inside the compiled JS files — this is normal and expected for Supabase anon keys, which are designed to be public. If you see the app sending requests to `undefined.supabase.co`, the env file is missing or mis-named.
+**Important:** Variables must start with `REACT_APP_` or they will be invisible to the app. They are baked into the JavaScript bundle at build time — restart the dev server after changing `.env.local`. The Supabase URL and anon key end up inside the compiled JS files — this is normal and expected for Supabase anon keys, which are designed to be public. If you see the app sending requests to `undefined.supabase.co`, the env file is missing or mis-named.
 
-**File:** `frontend/src/supabaseClient.js`
+**Note on `billing.js`:** In addition to the shared Supabase client, `lib/billing.js` reads `REACT_APP_SUPABASE_URL` and `REACT_APP_SUPABASE_KEY` directly to construct authenticated HTTP calls to Supabase Edge Functions (Stripe checkout, billing portal, subscription sync). Both variables are required for billing flows to work.
+
+**Files:** `frontend/src/supabaseClient.js`, `frontend/src/lib/billing.js`
 
 ---
 
