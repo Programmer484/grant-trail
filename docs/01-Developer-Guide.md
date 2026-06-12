@@ -350,17 +350,25 @@ session.membership.isExempt            // true for super_admins (no subscription
 |-------|-------------|
 | `tenants` | Independent organizations. Each tenant's data is fully isolated via RLS. Has `tenant_type` (`managed` or `self_service`). |
 | `tenant_settings` | Per-tenant approval workflow config (grant, budget, expense approval toggles). One row per tenant. |
+| `platform_settings` | Single-row platform-wide config managed by super admin. Holds default support contact info and Stripe product IDs for membership tiers. |
 | `invites` | Signup invite tokens for managed tenants (token, role, email, expiry, usage tracking). |
 | `users` | Grantee, admin, and super_admin accounts (linked to Supabase auth via `user_id` UUID). Scoped to a tenant. Includes `tax_month` for tax reminder. |
-| `grant_record` | Grant applications: name, amount, status, dates, approval notes |
-| `budget_items` | Budget line items per grant: name, allocated amount, running totals. Each item has a `status` (`pending` / `approved` / `rejected`) — only approved items' expenses count toward totals |
-| `expenses` | Expense entries per budget item: item name, amount spent, date. Each expense has a `status` (`pending` / `approved` / `rejected`) — only approved expenses count toward `grant_record.total_spent` and `budget_items.amount_spent` |
-| `receipts` | Receipt file metadata for expenses (stored in Supabase Storage `receipts/` bucket) |
-| `grant_attachments` | Supporting document metadata (stored in `grant-documents/` bucket) |
-| `grant_status_history` | Audit trail of every status change (written automatically by DB trigger) |
-| `grant_comments` | Admin comments on individual grants |
-| `audit_log` | General-purpose audit log for inserts, updates, deletes |
-| `notifications` | In-app notifications for users (created by DB triggers on status changes, comments, submissions). Realtime-enabled via Supabase Realtime. |
+| `grant_record` | Grant applications: name, amount, status, dates, approval notes. |
+| `budget_items` | Budget line items per grant: name, allocated amount, running totals. Each item has a `status` — only approved items' expenses count toward totals. |
+| `expenses` | Expense entries per budget item: item name, amount spent, date. Each expense has a `status` — only approved expenses count toward `grant_record.total_spent`. |
+| `receipts` | Receipt file metadata for expenses (stored in Supabase Storage `receipts/` bucket). |
+| `grant_attachments` | Supporting document metadata (stored in `grant-documents/` bucket). |
+| `grant_status_history` | Audit trail of every status change (written automatically by DB trigger, never by app code). |
+| `grant_comments` | Admin comments on individual grants, visible to the grantee. |
+| `audit_log` | General-purpose audit log for inserts, updates, deletes across core tables. |
+| `notifications` | In-app notifications (created by DB triggers on status changes, comments, submissions). Realtime-enabled. |
+| `subscriptions` | Stripe subscription records synced from webhooks. Source of truth for active billing status. |
+| `user_memberships` | Active membership tier per user (`basic` or `premium`). Queried by billing RPCs for feature access checks. |
+| `billing_customers` | Links a `users` row to a Stripe customer ID. Written by the checkout edge function. |
+| `billing_webhook_events` | Idempotency log of processed Stripe webhook events. Prevents duplicate processing on retries. |
+| `feature_entitlements` | Per-user feature flag overrides. Backs the `has_basic_membership()` / `has_premium_membership()` RPCs. |
+
+For full column-level detail see [`04-Database-Schema.md`](04-Database-Schema.md).
 
 ---
 
