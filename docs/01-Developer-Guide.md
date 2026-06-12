@@ -321,18 +321,26 @@ session.membership.isExempt            // true for super_admins (no subscription
 
 | Workflow | Files involved |
 |----------|----------------|
-| Login / Signup | `Login.js`, `SignUpClean.js`, `App.js` |
+| Login | `Login.js`, `App.js` |
+| Signup (invite or self-service) | `SignUpClean.js`, `CompleteProfile.js`, `App.js` |
+| Password reset | `ResetPassword.js` |
+| Complete profile after invite signup | `CompleteProfile.js`, `App.js` → `handleProfileComplete` |
 | Create a grant | `CreateGrant.js` |
 | View grant overview + status history | `GrantDetail.js` |
 | Manage budget items | `GrantBreakdown.js` + `BudgetItemModal.js` |
 | Add / edit an expense + upload receipt | `GrantBreakdown.js` + `AddExpenseModal.js` |
 | View all expenses | `ExpenseReports.js` |
-| Upload / view grant documents | `GrantAttachments.js` (embedded in GrantDetail and AdminGrantReview) |
+| Upload / view grant documents | `GrantAttachments.js` (embedded in `GrantDetail.js` and `AdminGrantReview.js`) |
+| Manage subscription / billing | `SubscriptionPage.js`, `lib/billing.js` |
+| Receive in-app notifications (realtime) | `NotificationBell.js`, `App.js` (Supabase Realtime subscription) |
 | Admin: review and approve / reject a grant | `AdminGrantReview.js` |
 | Admin: approve / reject budget items and expenses | `AdminGrantReview.js` (Budget & Expense Review section) |
 | Admin: see all grantees and grants | `AdminGrantList.js`, `AdminDashboard.js` |
 | Admin: view change history | `AdminAuditLog.js` |
-| Admin: manage users (role, enable/disable) | `AdminUserList.js` |
+| Admin: manage users (role, enable/disable, membership) | `AdminUserList.js` |
+| Admin: invite a new user | `AdminUserList.js` → invite form |
+| Admin: configure approval workflows | `AdminSettings.js` |
+| Super admin: create and manage tenants | `TenantManagement.js` |
 
 ---
 
