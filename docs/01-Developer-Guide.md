@@ -162,7 +162,7 @@ grant-trail/
 │   ├── 06-Randomize-Expense-Dates.sql
 │   └── 21-PROD-Setup.sql
 │
-├── docs-tfac/                    # Project documentation + brand assets
+├── docs/                         # Project documentation + brand assets
 │
 └── frontend/
     ├── public/
@@ -288,18 +288,30 @@ const { data: userRecord } = await supabase
   .select('*')
   .eq('user_id', user.id)   // match auth UUID to users table
   .single();
-setSession({ user, userRecord });
+const { data: tenant }   = await supabase.from('tenants').select('*').eq('id', userRecord.tenant_id).single();
+const { data: settings } = await supabase.from('tenant_settings').select('*').eq('tenant_id', userRecord.tenant_id).single();
+const tenantConfig = { ...settings, type: tenant?.tenant_type, name: tenant?.name };
+const membership   = await fetchMembershipStatus(userRecord); // Stripe access data
+setSession({ user, userRecord, tenantConfig, membership });
 
 // Later, in any component:
-session.user.id          // UUID — only needed to query the users table itself
-session.userRecord.id    // integer — use this as FK when inserting grants, expenses, etc.
-session.userRecord.role  // 'admin' or 'grantee'
+session.user.id                        // UUID — only for querying the users table
+session.userRecord.id                  // integer — use as FK when inserting grants, expenses, etc.
+session.userRecord.role                // 'grantee', 'admin', or 'super_admin'
+session.tenantConfig.require_grant_approval  // approval workflow flags
+session.tenantConfig.type              // 'managed' or 'self_service'
+session.tenantConfig.name              // tenant display name
+session.membership.hasBasicAccess      // true if user has an active Basic+ subscription
+session.membership.hasPremiumAccess    // true if user has an active Premium subscription
+session.membership.isExempt            // true for super_admins (no subscription required)
 ```
 
 **In practice:**
 - Use `session.user.id` (UUID) only when querying the `users` table itself
 - Use `session.userRecord.id` (integer) as FK when inserting into `grant_record`, `expenses`, etc.
-- Use `session.userRecord.role` to check if the logged-in user is an admin
+- Use `session.userRecord.role` to check role — values are `'grantee'`, `'admin'`, or `'super_admin'`
+- Use `session.membership.hasBasicAccess` / `hasPremiumAccess` to gate features behind subscriptions
+- Use `session.tenantConfig` to read approval workflow settings or tenant type
 
 **File:** `frontend/src/App.js`
 
