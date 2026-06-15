@@ -1361,7 +1361,7 @@ ON invites FOR SELECT USING (
 );
 
 CREATE POLICY "System can update invites"
-ON invites FOR UPDATE WITH CHECK (true);
+ON invites FOR UPDATE USING (true) WITH CHECK (true);
 
 -- users policies
 CREATE POLICY "Users can view their own user record"

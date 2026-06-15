@@ -1,0 +1,35 @@
+require('dotenv').config({ path: '.env.local' });
+const { defineConfig, devices } = require('@playwright/test');
+
+module.exports = defineConfig({
+  testDir: './tests/e2e',
+  fullyParallel: false,
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 2 : 0,
+  workers: 1, /* We run sequentially for now so we can pause and intervene */
+  reporter: 'html',
+  use: {
+    baseURL: 'http://localhost:3000',
+    trace: 'on-first-retry',
+  },
+  /* Maximum time one test can run for. */
+  timeout: 15000,
+  expect: {
+    /**
+     * Maximum time expect() should wait for the condition to be met.
+     */
+    timeout: 5000
+  },
+  webServer: {
+    command: 'npm start',
+    url: 'http://localhost:3000',
+    reuseExistingServer: !process.env.CI,
+    timeout: 120000,
+  },
+  projects: [
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+    },
+  ],
+});

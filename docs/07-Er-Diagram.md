@@ -23,6 +23,7 @@ erDiagram
     boolean   require_grant_approval
     boolean   require_budget_approval
     boolean   require_expense_approval
+    boolean   require_subscription
     varchar   support_email   "nullable"
     varchar   support_phone   "nullable"
   }

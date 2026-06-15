@@ -9,6 +9,10 @@ This consolidated guide covers everything a developer needs to set up, understan
 - **Tenant** = the GrantTrail account (data isolation boundary, settings, admin control). Stored in `tenants` table.
 - **Organization** = the real-world entity a user belongs to. Stored in `users.organization_name`. A managed tenant (e.g. TFAC) can have grantees from many different organizations.
 - These are NOT interchangeable. See the [Architecture doc](03-Architecture.md) for the full distinction.
+- **User Roles & Business Mapping:**
+  - **Grantee** (DB role: `'grantee'`) represents the **Applicant** or **Non-Profit** user.
+  - **Admin** (DB role: `'admin'`) represents the **Fiscal Agent** or **Charity Admin** managing the tenant.
+  - **Super Admin** (DB role: `'super_admin'`) represents the **Platform Admin** managing global configuration and tenants.
 
 ---
 

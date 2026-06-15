@@ -97,7 +97,8 @@ CREATE TABLE tenant_settings (
   tenant_id              INT PRIMARY KEY REFERENCES tenants(id),
   require_grant_approval   BOOLEAN DEFAULT true,
   require_budget_approval  BOOLEAN DEFAULT true,
-  require_expense_approval BOOLEAN DEFAULT true
+  require_expense_approval BOOLEAN DEFAULT true,
+  require_subscription     BOOLEAN DEFAULT true
 );
 ```
 
