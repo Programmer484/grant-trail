@@ -62,11 +62,11 @@ Per-tenant configuration for approval workflows and support contact. One row per
 | `require_grant_approval` | BOOLEAN | no | `true` | When `false`, new grants are auto-approved |
 | `require_budget_approval` | BOOLEAN | no | `true` | When `false`, new budget items are auto-approved |
 | `require_expense_approval` | BOOLEAN | no | `true` | When `false`, new expenses are auto-approved |
-| `require_subscription` | BOOLEAN | no | `true` | When `false`, subscription checks are bypassed |
+| `require_subscription` | BOOLEAN | no | `true` | When `false`, the subscription check is bypassed for the tenant |
 | `support_email` | VARCHAR(75) | yes | NULL | Tenant-specific support email shown in footer |
 | `support_phone` | VARCHAR(20) | yes | NULL | Tenant-specific support phone shown in footer |
 
-**Self-service tenants** are created with all three approval flags set to `false`.
+**Self-service tenants** are created with all three approval flags set to `false` and `require_subscription` set to `true` by default.
 
 ---
 
