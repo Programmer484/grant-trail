@@ -30,8 +30,8 @@ const SYNC_MEMBERSHIP_FUNCTION_CANDIDATES = [
 
 const DEFAULT_BASIC_PRODUCT_ID = 'prod_UKEACUGjIeg3MU';
 const DEFAULT_PREMIUM_PRODUCT_ID = 'prod_UDClBMtvFLKyNW';
-const SUPABASE_URL = (process.env.REACT_APP_SUPABASE_URL || '').replace(/\/+$/, '');
-const SUPABASE_ANON_KEY = process.env.REACT_APP_SUPABASE_KEY || '';
+const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL || '').replace(/\/+$/, '');
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_KEY || '';
 
 let cachedProductIds = null;
 

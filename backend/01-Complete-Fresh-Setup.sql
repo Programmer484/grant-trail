@@ -1747,7 +1747,8 @@ WHERE table_schema = 'public'
     'tenants', 'tenant_settings', 'platform_settings', 'invites',
     'users', 'grant_record', 'budget_items', 'expenses', 'receipts',
     'grant_attachments', 'grant_status_history', 'audit_log', 'grant_comments',
-    'notifications'
+    'notifications', 'billing_customers', 'billing_webhook_events', 'subscriptions',
+    'user_memberships', 'feature_entitlements'
   )
 ORDER BY table_name;
 
