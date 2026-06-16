@@ -9,13 +9,9 @@ async function deleteRows(supabase, table, idCol, ids) {
 }
 
 const test = base.test.extend({
-  supabase: async ({}, use, testInfo) => {
+  supabase: async ({}, use) => {
     const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.REACT_APP_SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    if (!supabaseUrl || !supabaseKey) {
-      testInfo.skip(true, 'Supabase credentials are not configured');
-      return;
-    }
     const client = createClient(supabaseUrl, supabaseKey);
     await use(client);
   },
