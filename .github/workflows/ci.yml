@@ -38,15 +38,37 @@ jobs:
           VITE_SUPABASE_KEY: dummy-key
         run: npm test
 
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v2
+        with:
+          version: latest
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Start Supabase
+        run: |
+          supabase start
+          # Extract credentials and map them to GITHUB_ENV
+          echo "VITE_SUPABASE_URL=$(supabase status -o env | grep API_URL | cut -d= -f2-)" >> $GITHUB_ENV
+          echo "VITE_SUPABASE_KEY=$(supabase status -o env | grep ANON_KEY | cut -d= -f2-)" >> $GITHUB_ENV
+          echo "SUPABASE_SERVICE_ROLE_KEY=$(supabase status -o env | grep SERVICE_ROLE_KEY | cut -d= -f2-)" >> $GITHUB_ENV
+        working-directory: .
+
+      - name: Bootstrap Database
+        run: |
+          docker exec -i supabase_db_grant-trail psql -U postgres -d postgres < backend/01-Complete-Fresh-Setup.sql
+          docker exec -i supabase_db_grant-trail psql -U postgres -d postgres < backend/02-Sample-Data.sql
+          docker exec -i supabase_db_grant-trail psql -U postgres -d postgres -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO service_role, anon, authenticated; GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO service_role, anon, authenticated; GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public TO service_role, anon, authenticated;"
+        working-directory: .
+
       - name: Install Playwright browsers and dependencies
         run: npx playwright install --with-deps
 
       - name: Run Playwright E2E tests
         env:
           CI: true
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://dummy.supabase.co' }}
-          VITE_SUPABASE_KEY: ${{ secrets.VITE_SUPABASE_KEY || 'dummy-key' }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          VITE_SUPABASE_URL: ${{ env.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_KEY: ${{ env.VITE_SUPABASE_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ env.SUPABASE_SERVICE_ROLE_KEY }}
         run: npm run e2e
 
       - name: Upload Playwright E2E HTML Report
