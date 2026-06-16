@@ -21,14 +21,14 @@ The transition from a working local prototype to a robust production system requ
 
 ### 1. Continuous Integration & Deployment (CI/CD)
 *Humans make mistakes; machines enforce rules.* We need to ensure broken code never reaches production.
-- [ ] **Action:** Set up GitHub Actions (or similar CI/CD pipeline).
-- [ ] **Action:** Configure the pipeline to run the Playwright E2E suite, unit tests, and ESLint automatically on every Pull Request.
-- [ ] **Action:** Block merging into the `main` branch if any tests fail.
+- [x] **Action:** Set up GitHub Actions (or similar CI/CD pipeline).
+- [x] **Action:** Configure the pipeline to run the Playwright E2E suite, unit tests, and ESLint automatically on every Pull Request.
+- [x] **Action:** Block merging into the `main` branch if any tests fail.
 
 ### 2. Environment Parity & Migrations
 *Staging and Production environments must perfectly mirror Local development.* 
-- [ ] **Action:** Transition away from the monolithic `01-Complete-Fresh-Setup.sql` script.
-- [ ] **Action:** Implement a formal database migration system (e.g., Supabase Migrations CLI) to track schema changes incrementally and apply them consistently across all environments.
+- [x] **Action:** Transition away from the monolithic `01-Complete-Fresh-Setup.sql` script.
+- [x] **Action:** Implement a formal database migration system (e.g., Supabase Migrations CLI) to track schema changes incrementally and apply them consistently across all environments.
 
 ---
 
@@ -38,12 +38,12 @@ Production applications must anticipate failure and defend against malicious act
 
 ### 3. Observability (Logging & Monitoring)
 *You cannot fix what you cannot see.* We need to know when things break before users complain.
-- [ ] **Action:** Integrate a frontend error tracking tool (e.g., **Sentry**) to capture React crashes and unhandled promise rejections in real-time.
-- [ ] **Action:** Set up structured backend logging and alerting (via Supabase webhooks or Datadog) for critical failures (e.g., Stripe webhook processing failures).
+- [x] **Action:** Integrate a frontend error tracking tool (e.g., **Sentry**) to capture React crashes and unhandled promise rejections in real-time.
+- [x] **Action:** Set up structured backend logging and alerting (via Supabase webhooks or Datadog) for critical failures (e.g., Stripe webhook processing failures).
 
 ### 4. Graceful Degradation & Error Handling
 *Third-party APIs will eventually go down. The app shouldn't explode when they do.*
-- [ ] **Action:** Implement global React Error Boundaries to prevent the entire UI from crashing to a white screen if a single component fails.
+- [x] **Action:** Implement global React Error Boundaries to prevent the entire UI from crashing to a white screen if a single component fails.
 - [ ] **Action:** Add fallback UI states for external dependencies. For example, if the Stripe API is unreachable, the app should display a polite "Billing is temporarily unavailable" banner while keeping core grant functionalities active.
 
 ### 5. Security in Depth (Zero Trust)
