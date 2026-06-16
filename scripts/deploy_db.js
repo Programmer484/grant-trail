@@ -12,7 +12,7 @@ const askQuestion = (query) => new Promise((resolve) => rl.question(query, resol
 
 async function main() {
   console.log('====================================================');
-  console.log('🚀 GrantTrail Production Database Deployment Script');
+  console.log('🚀 GrantTrail Production DB Teardown & Setup Script');
   console.log('====================================================\n');
 
   try {
@@ -31,14 +31,52 @@ async function main() {
       throw new Error('Failed to link project. Make sure the Project Ref is correct and you entered the correct database password.');
     }
 
-    console.log('\n📦 Pushing database migrations to remote database...');
-    const pushResult = spawnSync('npx', ['--prefix', 'frontend', 'supabase', 'db', 'push'], {
+    console.log('\n💥 Initiating remote database teardown and clean reset...');
+    // Reset remote database: tears down all schemas/tables, applies migrations, skips seed.sql
+    const resetResult = spawnSync('npx', [
+      '--prefix', 'frontend', 'supabase', 'db', 'reset', '--linked', '--no-seed', '--yes'
+    ], {
       stdio: 'inherit',
       shell: true
     });
-    if (pushResult.status !== 0) {
-      throw new Error('Failed to push database migrations.');
+    if (resetResult.status !== 0) {
+      throw new Error('Failed to reset remote database. Ensure you have ownership permissions over the remote database.');
     }
+    console.log('✅ Remote database teardown and schema migrations applied successfully.');
+
+    console.log('\n⚡ Deploying Supabase Edge Functions...');
+    // 1. Deploy authenticated edge functions
+    console.log('Deploying authenticated checkout and subscription sync functions...');
+    const deployAuthResult = spawnSync('npx', [
+      '--prefix', 'frontend', 'supabase', 'functions', 'deploy',
+      'create-basic-membership-checkout-session',
+      'create-billing-portal-session',
+      'create-checkout-session',
+      'sync-my-subscription',
+      '--use-api'
+    ], {
+      stdio: 'inherit',
+      shell: true
+    });
+    if (deployAuthResult.status !== 0) {
+      throw new Error('Failed to deploy authenticated edge functions.');
+    }
+
+    // 2. Deploy stripe-webhook with JWT verification disabled
+    console.log('Deploying Stripe Webhook function (no JWT verification)...');
+    const deployWebhookResult = spawnSync('npx', [
+      '--prefix', 'frontend', 'supabase', 'functions', 'deploy',
+      'stripe-webhook',
+      '--no-verify-jwt',
+      '--use-api'
+    ], {
+      stdio: 'inherit',
+      shell: true
+    });
+    if (deployWebhookResult.status !== 0) {
+      throw new Error('Failed to deploy Stripe Webhook edge function.');
+    }
+    console.log('✅ Edge functions successfully deployed.');
 
     console.log('\n👤 Let\'s configure the first Super Admin user:');
     const firstName = (await askQuestion('First Name [Sam]: ')).trim() || 'Sam';
@@ -135,7 +173,7 @@ WHERE email = '${email.replace(/'/g, "''")}';
       // Ignore cleanup error
     }
 
-    console.log('\n🎉 Production Database Deployment Successful!');
+    console.log('\n🎉 Production Database Setup Successful!');
     console.log(`Super Admin user (${email}) is successfully linked and ready to log in.`);
   } catch (err) {
     console.error(`\n❌ Error: ${err.message}`);
