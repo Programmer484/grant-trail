@@ -2,11 +2,36 @@
 -- TFAC GRANT MANAGEMENT SYSTEM
 -- Sample Data (Development / Testing)
 -- ==========================================
--- Run AFTER 01-Complete-Fresh-Setup.sql
--- Then run 05-After-User-Creation.sql once
--- real Supabase Auth accounts have been created.
---
 
+-- ==========================================
+-- SECTION 0: AUTH USERS
+-- ==========================================
+
+INSERT INTO auth.users (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at, recovery_sent_at, last_sign_in_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at, confirmation_token, email_change, email_change_token_new, recovery_token)
+VALUES
+  ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-000000000001', 'authenticated', 'authenticated', 'maria.smith@example.com', crypt('password123', gen_salt('bf')), now(), now(), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-000000000002', 'authenticated', 'authenticated', 'jacob.soto@example.com', crypt('password123', gen_salt('bf')), now(), now(), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-000000000003', 'authenticated', 'authenticated', 'faizan.sharp@example.com', crypt('password123', gen_salt('bf')), now(), now(), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-000000000004', 'authenticated', 'authenticated', 'eric.hobbs@example.com', crypt('password123', gen_salt('bf')), now(), now(), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-000000000005', 'authenticated', 'authenticated', 'sam.reeves@example.com', crypt('password123', gen_salt('bf')), now(), now(), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-000000000006', 'authenticated', 'authenticated', 'priya.sharma@example.com', crypt('password123', gen_salt('bf')), now(), now(), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-000000000007', 'authenticated', 'authenticated', 'david.chen@example.com', crypt('password123', gen_salt('bf')), now(), now(), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-000000000008', 'authenticated', 'authenticated', 'amara.okafor@example.com', crypt('password123', gen_salt('bf')), now(), now(), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-000000000009', 'authenticated', 'authenticated', 'carlos.lopez@example.com', crypt('password123', gen_salt('bf')), now(), now(), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000000', '00000000-0000-0000-0000-00000000000a', 'authenticated', 'authenticated', 'nadia.park@example.com', crypt('password123', gen_salt('bf')), now(), now(), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', '');
+
+INSERT INTO auth.identities (id, user_id, provider_id, identity_data, provider, last_sign_in_at, created_at, updated_at)
+VALUES
+  ('00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', format('{"sub":"%s","email":"%s"}', '00000000-0000-0000-0000-000000000001', 'maria.smith@example.com')::jsonb, 'email', now(), now(), now()),
+  ('00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000002', format('{"sub":"%s","email":"%s"}', '00000000-0000-0000-0000-000000000002', 'jacob.soto@example.com')::jsonb, 'email', now(), now(), now()),
+  ('00000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000003', format('{"sub":"%s","email":"%s"}', '00000000-0000-0000-0000-000000000003', 'faizan.sharp@example.com')::jsonb, 'email', now(), now(), now()),
+  ('00000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000004', format('{"sub":"%s","email":"%s"}', '00000000-0000-0000-0000-000000000004', 'eric.hobbs@example.com')::jsonb, 'email', now(), now(), now()),
+  ('00000000-0000-0000-0000-000000000005', '00000000-0000-0000-0000-000000000005', '00000000-0000-0000-0000-000000000005', format('{"sub":"%s","email":"%s"}', '00000000-0000-0000-0000-000000000005', 'sam.reeves@example.com')::jsonb, 'email', now(), now(), now()),
+  ('00000000-0000-0000-0000-000000000006', '00000000-0000-0000-0000-000000000006', '00000000-0000-0000-0000-000000000006', format('{"sub":"%s","email":"%s"}', '00000000-0000-0000-0000-000000000006', 'priya.sharma@example.com')::jsonb, 'email', now(), now(), now()),
+  ('00000000-0000-0000-0000-000000000007', '00000000-0000-0000-0000-000000000007', '00000000-0000-0000-0000-000000000007', format('{"sub":"%s","email":"%s"}', '00000000-0000-0000-0000-000000000007', 'david.chen@example.com')::jsonb, 'email', now(), now(), now()),
+  ('00000000-0000-0000-0000-000000000008', '00000000-0000-0000-0000-000000000008', '00000000-0000-0000-0000-000000000008', format('{"sub":"%s","email":"%s"}', '00000000-0000-0000-0000-000000000008', 'amara.okafor@example.com')::jsonb, 'email', now(), now(), now()),
+  ('00000000-0000-0000-0000-000000000009', '00000000-0000-0000-0000-000000000009', '00000000-0000-0000-0000-000000000009', format('{"sub":"%s","email":"%s"}', '00000000-0000-0000-0000-000000000009', 'carlos.lopez@example.com')::jsonb, 'email', now(), now(), now()),
+  ('00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-00000000000a', format('{"sub":"%s","email":"%s"}', '00000000-0000-0000-0000-00000000000a', 'nadia.park@example.com')::jsonb, 'email', now(), now(), now());
 
 -- ==========================================
 -- SECTION 1: TENANT
@@ -26,28 +51,27 @@ INSERT INTO tenant_settings (tenant_id, require_grant_approval, require_budget_a
   ((SELECT id FROM tenants WHERE slug = 'lopez-consulting'), false, false, false),
   ((SELECT id FROM tenants WHERE slug = 'greenleaf'), false, false, false);
 
-
 -- ==========================================
 -- SECTION 2: USERS
 -- ==========================================
 
-INSERT INTO users (tenant_id, firstname, lastname, organization_name, email, phone_number, role, tax_month) VALUES
-  ((SELECT id FROM tenants WHERE slug = 'tfac'), 'Maria',  'Smith', 'Helping Hands',               'maria.smith@example.com',  '212-555-0101', 'grantee', 5),
-  ((SELECT id FROM tenants WHERE slug = 'tfac'), 'Jacob',  'Soto',  'Bright Future Org',            'jacob.soto@example.com',   '305-555-0102', 'grantee', 6),
-  ((SELECT id FROM tenants WHERE slug = 'tfac'), 'Faizan', 'Sharp', 'Hope Foundation',              'faizan.sharp@example.com', '404-555-0103', 'grantee', 5),
-  ((SELECT id FROM tenants WHERE slug = 'tfac'), 'Eric',   'Hobbs', 'The Family Advocates Canada',  'eric.hobbs@example.com',   '312-555-0104', 'admin',   NULL),
-  ((SELECT id FROM tenants WHERE slug = 'tfac'), 'Sam',    'Reeves','The Family Advocates Canada',  'sam.reeves@example.com',   '312-555-0105', 'super_admin', NULL);
+INSERT INTO users (user_id, tenant_id, firstname, lastname, organization_name, email, phone_number, role, tax_month) VALUES
+  ('00000000-0000-0000-0000-000000000001', (SELECT id FROM tenants WHERE slug = 'tfac'), 'Maria',  'Smith', 'Helping Hands',               'maria.smith@example.com',  '212-555-0101', 'grantee', 5),
+  ('00000000-0000-0000-0000-000000000002', (SELECT id FROM tenants WHERE slug = 'tfac'), 'Jacob',  'Soto',  'Bright Future Org',            'jacob.soto@example.com',   '305-555-0102', 'grantee', 6),
+  ('00000000-0000-0000-0000-000000000003', (SELECT id FROM tenants WHERE slug = 'tfac'), 'Faizan', 'Sharp', 'Hope Foundation',              'faizan.sharp@example.com', '404-555-0103', 'grantee', 5),
+  ('00000000-0000-0000-0000-000000000004', (SELECT id FROM tenants WHERE slug = 'tfac'), 'Eric',   'Hobbs', 'The Family Advocates Canada',  'eric.hobbs@example.com',   '312-555-0104', 'admin',   NULL),
+  ('00000000-0000-0000-0000-000000000005', (SELECT id FROM tenants WHERE slug = 'tfac'), 'Sam',    'Reeves','The Family Advocates Canada',  'sam.reeves@example.com',   '312-555-0105', 'super_admin', NULL);
 
 -- Bright Horizons Foundation (managed tenant #2)
-INSERT INTO users (tenant_id, firstname, lastname, organization_name, email, phone_number, role, tax_month) VALUES
-  ((SELECT id FROM tenants WHERE slug = 'bright-horizons'), 'Priya',   'Sharma',  'Bright Horizons Foundation', 'priya.sharma@example.com',   '416-555-0201', 'grantee', 4),
-  ((SELECT id FROM tenants WHERE slug = 'bright-horizons'), 'David',   'Chen',    'Bright Horizons Foundation', 'david.chen@example.com',     '416-555-0202', 'grantee', 4),
-  ((SELECT id FROM tenants WHERE slug = 'bright-horizons'), 'Amara',   'Okafor',  'Bright Horizons Foundation', 'amara.okafor@example.com',   '416-555-0203', 'admin',   NULL);
+INSERT INTO users (user_id, tenant_id, firstname, lastname, organization_name, email, phone_number, role, tax_month) VALUES
+  ('00000000-0000-0000-0000-000000000006', (SELECT id FROM tenants WHERE slug = 'bright-horizons'), 'Priya',   'Sharma',  'Bright Horizons Foundation', 'priya.sharma@example.com',   '416-555-0201', 'grantee', 4),
+  ('00000000-0000-0000-0000-000000000007', (SELECT id FROM tenants WHERE slug = 'bright-horizons'), 'David',   'Chen',    'Bright Horizons Foundation', 'david.chen@example.com',     '416-555-0202', 'grantee', 4),
+  ('00000000-0000-0000-0000-000000000008', (SELECT id FROM tenants WHERE slug = 'bright-horizons'), 'Amara',   'Okafor',  'Bright Horizons Foundation', 'amara.okafor@example.com',   '416-555-0203', 'admin',   NULL);
 
 -- Self-service tenants (one user each, auto-approved)
-INSERT INTO users (tenant_id, firstname, lastname, organization_name, email, phone_number, role, tax_month) VALUES
-  ((SELECT id FROM tenants WHERE slug = 'lopez-consulting'), 'Carlos', 'Lopez',   'Lopez Consulting',           'carlos.lopez@example.com',   '647-555-0301', 'grantee', 3),
-  ((SELECT id FROM tenants WHERE slug = 'greenleaf'),        'Nadia',  'Park',    'Greenleaf Bookkeeping',      'nadia.park@example.com',     '905-555-0401', 'grantee', 9);
+INSERT INTO users (user_id, tenant_id, firstname, lastname, organization_name, email, phone_number, role, tax_month) VALUES
+  ('00000000-0000-0000-0000-000000000009', (SELECT id FROM tenants WHERE slug = 'lopez-consulting'), 'Carlos', 'Lopez',   'Lopez Consulting',           'carlos.lopez@example.com',   '647-555-0301', 'grantee', 3),
+  ('00000000-0000-0000-0000-00000000000a', (SELECT id FROM tenants WHERE slug = 'greenleaf'),        'Nadia',  'Park',    'Greenleaf Bookkeeping',      'nadia.park@example.com',     '905-555-0401', 'grantee', 9);
 
 
 -- ==========================================

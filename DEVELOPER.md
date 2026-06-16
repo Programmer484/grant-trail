@@ -93,64 +93,88 @@ Before you start, make sure you have:
 
 - **Node.js 18+** and **npm** — verify with `node -v` and `npm -v`
 - **Git**
-- The **Supabase project URL and anon key** for the team's Supabase instance (ask the team lead) — OR your own Supabase account if starting fresh
+- **Docker** — installed and running on your local machine (required for local Supabase)
 
 ---
 
 ## 1.3 Local Setup
+
+Follow these steps to spin up the local development environment:
 
 ```bash
 # 1. Clone the repo
 git clone <repo-url>
 cd grant-trail
 
-# 2. Install frontend dependencies
-cd frontend
-npm install
+# 2. Bootstrap dependencies and environment
+npm run setup
 
-# 3. Create the environment file (see Section 1.10 for details)
-#    Create frontend/.env.local with:
-#    VITE_SUPABASE_URL=https://your-project.supabase.co
-#    VITE_SUPABASE_KEY=your-anon-key-here
+# 3. Start local Supabase services (requires Docker running)
+npm run db:start
 
-# 4. Start the dev server
-npm start
-# Opens http://localhost:3000
+# 4. Start the frontend development server
+npm run dev
 ```
 
-The app will show the landing page. If connecting to an existing Supabase project, the database is already set up — skip Section 1.4. Only follow Section 1.4 if starting from a brand new Supabase project.
+After running `npm run db:start`, the CLI will output your local credentials, URLs, and keys. Because the environment files are pre-configured, you do not need to copy-paste them manually.
 
 ---
 
-## 1.4 Database Setup
+## 1.4 Database Setup (Local-First Workflow)
 
-All SQL scripts live in `backend/`. Run them in the Supabase Dashboard → SQL Editor.
+The project now uses the **Supabase CLI** and version-controlled migration files in `supabase/migrations/`. 
 
-| Script | When to run | What it does |
-|--------|-------------|--------------|
-| `supabase/migrations/*_initial_schema.sql` | **First** — automatic via CLI | Creates all tables, functions, triggers, RLS policies, and storage buckets |
-| `supabase/seed.sql` | After migrations — automatic | Inserts 3 grantee accounts + 6 grants with budget items and expenses |
-| `05-After-User-Creation.sql` | After creating Auth accounts (see below) | Links Supabase Auth UUIDs to the users table rows; adds sample admin comments |
-| `03-Large-Sample-Data.sql` | Optional | 50+ grants for one user (Alex Tan) — good for pagination/chart testing |
-| `04-Check-Missing-Auth-Users.sql` | Before creating Auth accounts | Shows which users still need Auth accounts created in Supabase Dashboard |
-| `00-Full-Teardown.sql` | When starting over | Drops all tables, functions, and policies — safe to run repeatedly |
-| `06-Randomize-Expense-Dates.sql` | Dev utility | Randomizes existing expense dates to spread them across grant periods for better charts |
-| `21-PROD-Setup.sql` | Production only | Bootstraps the first tenant and super_admin user for a production deployment |
-| `22-Admin-Subscription-Update.sql` | Dev utility | Applies the admin subscription exemption rules/updates to existing databases |
+> [!WARNING]
+> **DO NOT** make schema changes directly on cloud Supabase instances. All database schema changes must be driven through local development and generated into Git-tracked migration files.
 
-**Sample user setup flow:**
+### Starting a Clean Database
+When you run `supabase start` (or when you want to start completely fresh):
+1. The CLI spins up a local Postgres database.
+2. It automatically applies all SQL migrations in `supabase/migrations/` sequentially.
+3. It automatically executes `supabase/seed.sql` to populate sample tenants, users, grants, budget items, and expenses.
 
-1. Run `supabase start` in the terminal to spin up the local DB, apply migrations, and insert `seed.sql`.
-2. The `seed.sql` file inserts user rows in the `users` table but leaves the auth UUID column (`user_id`) null.
-3. In Supabase Dashboard → Authentication → Users, manually create accounts for these emails with any password (you can create all 10 sample users from `supabase/seed.sql`, or a subset like the TFAC ones):
-   - `maria.smith@example.com` (grantee)
-   - `jacob.soto@example.com` (grantee)
-   - `faizan.sharp@example.com` (grantee)
-   - `eric.hobbs@example.com` (admin)
-   - `sam.reeves@example.com` (super_admin)
-4. Run `05-After-User-Creation.sql` — this fills in the UUID column by matching emails
+### Bootstrapping Local Auth Users
+Because we have integrated the Auth UUIDs directly into the `supabase/seed.sql` file, **all test users are completely automated**. You do not need to manually create users in the Supabase Studio! 
 
-**Sample login credentials:** Use whatever password you set in step 3. Log in as `eric.hobbs@example.com` for admin access.
+The default test users (with password `password123`) are:
+- `maria.smith@example.com` (Grantee)
+- `jacob.soto@example.com` (Grantee)
+- `faizan.sharp@example.com` (Grantee)
+- `eric.hobbs@example.com` (Admin)
+- `sam.reeves@example.com` (Super Admin)
+- *See `seed.sql` for self-service and managed tenant 2 test accounts.*
+
+### Connecting the Frontend
+1. Create or edit `frontend/.env.local`:
+   ```env
+   VITE_SUPABASE_URL=http://127.0.0.1:54321
+   VITE_SUPABASE_KEY=your-local-anon-key-here
+   ```
+   *Replace `your-local-anon-key-here` with the `anon key` printed in the terminal after running `supabase start`.*
+2. Start the React app:
+   ```bash
+   cd frontend
+   npm run dev
+   ```
+
+---
+
+## 1.4.5 Making Schema Changes (Team Workflow)
+
+To prevent database drift and merge conflicts, follow this workflow:
+
+1. Make changes to your local database using the local Studio interface (`http://127.0.0.1:54323`) or raw SQL scripts.
+2. Once verified, auto-generate a new migration file:
+   ```bash
+   supabase db diff -f your_migration_name
+   ```
+   This generates `supabase/migrations/<timestamp>_your_migration_name.sql`.
+3. Commit this file to Git.
+4. When other developers `git pull` your changes, they update their local environment by running:
+   ```bash
+   supabase db reset
+   ```
+   *This tears down their local DB, re-runs all migrations chronologically, and re-runs `seed.sql`.*
 
 ---
 
@@ -158,18 +182,17 @@ All SQL scripts live in `backend/`. Run them in the Supabase Dashboard → SQL E
 
 ```
 grant-trail/
-├── backend/                      # Legacy SQL scripts and utilities
-│   ├── 00-Full-Teardown.sql
-│   ├── 03-Large-Sample-Data.sql
-│   ├── 04-Check-Missing-Auth-Users.sql
-│   ├── 05-After-User-Creation.sql
-│   ├── 06-Randomize-Expense-Dates.sql
-│   ├── 21-PROD-Setup.sql
-│   └── 22-Admin-Subscription-Update.sql
-│
-├── docs/                         # Project documentation + brand assets
-│
-└── frontend/
+├── frontend/                     # React application
+│   ├── public/
+│   └── src/
+├── supabase/                     # Supabase local environment
+│   ├── migrations/               # Version-controlled schema changes
+│   ├── seed.sql                  # Auto-executed local sample data + Auth users
+│   ├── large_sample_data.sql     # Optional script to insert mass data for UI testing
+│   └── prod_setup.sql            # Optional script for production bootstrapping
+├── tests/
+│   └── load/                     # Load testing scripts
+└── docs/                         # Project documentation + brand assets
     ├── public/
     └── src/
         ├── App.js                # Root: auth, session, routing
@@ -391,6 +414,13 @@ Create `frontend/.env.local` for local development. This file is git-ignored. Us
 **Note on `billing.js`:** In addition to the shared Supabase client, `lib/billing.js` reads `VITE_SUPABASE_URL` and `VITE_SUPABASE_KEY` directly to construct authenticated HTTP calls to Supabase Edge Functions (Stripe checkout, billing portal, subscription sync). Both variables are required for billing flows to work.
 
 **Files:** `frontend/src/supabaseClient.js`, `frontend/src/lib/billing.js`
+
+> [!IMPORTANT]
+> **Standard for Adding New Environment Variables:**
+> When adding new environment variables to the project:
+> 1. **Prefix**: Ensure the variable starts with `VITE_` so it is visible to the frontend client.
+> 2. **Update `.env.example`**: You **must** add a placeholder value for the variable in `frontend/.env.example` (e.g., `VITE_STRIPE_KEY=""`).
+> 3. **Avoid Runtime Crashes**: Ensure the codebase handles the variable being empty or undefined gracefully (e.g., disable the feature or show a fallback UI instead of crashing the app).
 
 ---
 
