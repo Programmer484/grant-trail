@@ -6,17 +6,17 @@ import { Link, useNavigate } from 'react-router-dom';
 import '../styles/Login.css';
 
 function Login({ onLogin }) {
-  const [email, setEmail]       = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
-  const [loading, setLoading]   = useState(false);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   // Forgot password view
-  const [forgotMode, setForgotMode]         = useState(false);
-  const [resetSent, setResetSent]           = useState(false);
-  const [resetLoading, setResetLoading]     = useState(false);
-  const [resetError, setResetError]         = useState('');
+  const [forgotMode, setForgotMode] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetError, setResetError] = useState('');
 
   async function handleLogin(e) {
     e.preventDefault();
