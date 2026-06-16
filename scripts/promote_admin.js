@@ -26,7 +26,7 @@ async function main() {
       throw new Error('Email address cannot be empty.');
     }
 
-    console.log(`\n🔍 Checking if user profile exists for "${email}" on remote database...`);
+    console.log(`\n🔍 Checking if user profile exists for "${email}" on remote production database...`);
     
     // We execute a check query in JSON format
     const checkQuery = `SELECT id, role, tenant_id FROM users WHERE email = '${email.replace(/'/g, "''")}';`;
@@ -37,17 +37,18 @@ async function main() {
     });
 
     if (checkResult.status !== 0) {
-      throw new Error(`Failed to query remote database: ${checkResult.stderr.toString()}`);
+      throw new Error(`Failed to query database: ${checkResult.stderr?.toString() || 'unknown error'}`);
     }
 
     let rows = [];
     try {
       const output = checkResult.stdout.toString().trim();
-      // Parse JSON from the CLI output. Supabase might print log prefixes before/after JSON,
-      // so we find the start of the JSON array '[' and parse it.
-      const jsonStart = output.indexOf('[');
+      // Parse JSON from the CLI output.
+      // Find the start of the JSON object '{' and parse it.
+      const jsonStart = output.indexOf('{');
       if (jsonStart !== -1) {
-        rows = JSON.parse(output.substring(jsonStart));
+        const parsed = JSON.parse(output.substring(jsonStart));
+        rows = parsed.rows || [];
       } else {
         throw new Error('No JSON output returned.');
       }
@@ -55,15 +56,15 @@ async function main() {
       throw new Error(`Failed to parse query result: ${e.message}\nRaw CLI output: ${checkResult.stdout.toString()}`);
     }
 
-    if (rows.length === 0) {
-      throw new Error(`No user profile found for email "${email}".\n` + 
+    if (rows.length === 0 || !rows[0].id) {
+      throw new Error(`No user profile found for email "${email}" on the remote production database.\n` + 
                       'Please ensure the user has completed their registration in the application browser signup first.');
     }
 
     const user = rows[0];
     console.log(`✅ Found user record (ID: ${user.id}, Current Role: ${user.role}).`);
 
-    console.log(`\n⬆️ Promoting "${email}" to Super Admin...`);
+    console.log(`\n⬆️ Promoting "${email}" to Super Admin on remote production database...`);
 
     // We build the update SQL query to promote them and shift their tenant assignment to 'tfac'
     const promoteSql = `
@@ -96,7 +97,7 @@ WHERE email = '${email.replace(/'/g, "''")}';
     }
 
     if (promoteExec.status !== 0) {
-      throw new Error('Failed to execute promotion SQL on remote database.');
+      throw new Error('Failed to execute promotion SQL on the remote production database.');
     }
 
     console.log('\n====================================================');
