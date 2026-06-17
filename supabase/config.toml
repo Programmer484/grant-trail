@@ -385,6 +385,31 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+# Edge Functions. These are deployed to production automatically by the Supabase
+# GitHub integration ("Deploy to production") on merge — only functions declared
+# here are deployed. Authenticated functions keep JWT verification on; the Stripe
+# webhook is called by Stripe (no user JWT) and verifies Stripe's signature
+# instead, so verify_jwt is disabled for it.
+[functions.create-basic-membership-checkout-session]
+enabled = true
+verify_jwt = true
+
+[functions.create-billing-portal-session]
+enabled = true
+verify_jwt = true
+
+[functions.create-checkout-session]
+enabled = true
+verify_jwt = true
+
+[functions.sync-my-subscription]
+enabled = true
+verify_jwt = true
+
+[functions.stripe-webhook]
+enabled = true
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

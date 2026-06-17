@@ -93,21 +93,24 @@ Also keep your **Project Reference ID** handy — Steps 3 and 6 ask for it.
 
 ---
 
-## Step 3 — Run the Schema Migration
+## Step 3 — Deploy the Schema & Edge Functions (via the GitHub integration)
 
-From the repository root, run:
+Production Supabase is connected to this repository through the **Supabase GitHub integration**. You don't run a deploy script — merging to the production branch deploys for you.
 
-```bash
-npm run db:deploy
-```
+One-time setup (Supabase Dashboard → **Project Settings → Integrations → GitHub**):
+1. Authorize GitHub and connect this repository; set the **Working directory** to `.` (the `supabase/` folder is at the repo root).
+2. Enable **Deploy to production** so merges to the production branch are applied automatically.
+3. Strongly recommended: enable the integration's **required status check** in your GitHub branch protection so a failing migration blocks the merge.
 
-When prompted, enter your **Project Reference ID** from Step 1.
+After that, deploying is just merging a PR that touches `supabase/`. On merge the integration:
+- Applies any **new migrations** under `supabase/migrations/` (builds the schema; never re-runs applied migrations)
+- Deploys the **Edge Functions declared in `config.toml`** (`verify_jwt = false` for `stripe-webhook`)
+- Deploys **storage buckets** created by the migrations
+- Provisions the default root tenant (`tfac`) and its settings, via the `bootstrap_initial_tenant` migration
 
-This script will:
-- Link the local project to your remote Supabase project via the Supabase CLI
-- Apply all migrations to build the complete schema
-- Deploy all Edge Functions
-- Provision the default platform root tenant (`tfac`) and default settings
+> Secrets are **not** handled by the integration — set them separately with `npm run deploy:secrets` (Step 6). Functions will deploy but fail at runtime until their secrets exist.
+>
+> The integration does **not** snapshot the database before applying migrations. Make sure **Point-in-Time Recovery** is enabled (or take a manual `supabase db dump`) before merging risky migrations.
 
 **What gets created:**
 - All database tables, indexes, and constraints
@@ -246,7 +249,7 @@ Once bootstrap is done, the infrastructure and secrets stay put. Day-to-day depl
 | **A secret** (rotated Stripe key, etc.) | Recreate just the relevant `.deploy/` file with the new value, then `npm run deploy:secrets`. |
 | **The first super admin** | One-time only — see Step 9. |
 
-> **Schema changes are always incremental.** Never edit an already-applied migration or hand-edit the remote database — add a new timestamped file under `supabase/migrations/` and let `db push` apply it. Both `npm run db:migrate` and the bootstrap `npm run db:deploy` use `supabase db push`, which applies only pending migrations and **never drops tables or data**, so neither wipes production. `db:deploy` additionally (re)deploys Edge Functions and provisions the root tenant, so it's still the right command for first-time bootstrap; `db:migrate` is the lean choice for routine schema updates.
+> **Schema changes are always incremental.** Never edit an already-applied migration or hand-edit the remote database — add a new timestamped file under `supabase/migrations/`. On merge to the production branch, the **Supabase GitHub integration** applies only the pending migrations (it never re-runs applied ones), so it cannot replay an edited file. Avoid `DROP`/destructive statements unless intended: the integration applies whatever the migration contains and does not back up first. `npm run db:migrate` (`supabase db push --linked`) remains available as a manual escape hatch, but the integration is the normal path.
 
 ---
 
