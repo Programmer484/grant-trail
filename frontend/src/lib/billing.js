@@ -28,8 +28,12 @@ const SYNC_MEMBERSHIP_FUNCTION_CANDIDATES = [
   'sync-my-subscription',
 ];
 
-const DEFAULT_BASIC_PRODUCT_ID = 'prod_UKEACUGjIeg3MU';
-const DEFAULT_PREMIUM_PRODUCT_ID = 'prod_UDClBMtvFLKyNW';
+// Stripe product IDs are never hard-coded. They come from platform_settings
+// (kept in sync from the configured Stripe price env vars by the Edge Functions),
+// with an optional build-time env override for environments that prefer to pin
+// them. No literal product ID ships in the bundle.
+const ENV_BASIC_PRODUCT_ID = import.meta.env.VITE_STRIPE_PRODUCT_BASIC || '';
+const ENV_PREMIUM_PRODUCT_ID = import.meta.env.VITE_STRIPE_PRODUCT_PREMIUM || '';
 const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL || '').replace(/\/+$/, '');
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_KEY || '';
 
@@ -96,15 +100,15 @@ async function getMembershipProductIds() {
 
   if (error) {
     cachedProductIds = {
-      basic: DEFAULT_BASIC_PRODUCT_ID,
-      premium: DEFAULT_PREMIUM_PRODUCT_ID,
+      basic: ENV_BASIC_PRODUCT_ID,
+      premium: ENV_PREMIUM_PRODUCT_ID,
     };
     return cachedProductIds;
   }
 
   cachedProductIds = {
-    basic: data?.basic_membership_product_id || DEFAULT_BASIC_PRODUCT_ID,
-    premium: data?.premium_membership_product_id || DEFAULT_PREMIUM_PRODUCT_ID,
+    basic: data?.basic_membership_product_id || ENV_BASIC_PRODUCT_ID,
+    premium: data?.premium_membership_product_id || ENV_PREMIUM_PRODUCT_ID,
   };
 
   return cachedProductIds;

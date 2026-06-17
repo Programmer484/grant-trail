@@ -1,6 +1,9 @@
 # Production Deployment Guide
 
-This guide covers every step required to take GrantTrail from zero to a live production environment.
+GrantTrail deployment has two phases:
+
+- **[First-time bootstrap](#part-a--first-time-bootstrap-do-once)** — provision the infrastructure and wire up config. You do this once.
+- **[Deploying changes](#part-b--deploying-changes-every-time-after)** — the steady state after bootstrap: `git push` ships code, one command ships schema changes.
 
 **Architecture overview:**
 - **Backend** — Supabase (database, auth, storage, edge functions)
@@ -9,15 +12,19 @@ This guide covers every step required to take GrantTrail from zero to a live pro
 
 ---
 
-## Production Deployment Checklist
+# Part A — First-Time Bootstrap (do once)
+
+**The credential approach:** instead of hunting for each key at the moment a command needs it, you gather every API key you can up front into **two temporary, git-ignored scratch files** under `.deploy/` — one per destination (Step 2). The values you can't know yet — the Stripe webhook secret and your live app URL — get appended the moment each step produces them. Then `npm run deploy:secrets` pushes each file to its platform, verifies, and **shreds `.deploy/`** in one shot (Step 6). The files live only for the few minutes of bootstrap and never touch your local dev config or the repo.
+
+## Bootstrap Checklist
 
 - [ ] 1. Create a Supabase project
-- [ ] 2. Run the schema migration
-- [ ] 3. Configure the Stripe webhook endpoint
-- [ ] 4. Import the GitHub repo into Vercel
-- [ ] 5. Set Vercel environment variables
-- [ ] 6. Set Edge Function secrets
-- [ ] 7. Configure authentication settings
+- [ ] 2. Gather all credentials into temporary `.deploy/` files
+- [ ] 3. Run the schema migration
+- [ ] 4. Configure the Stripe webhook endpoint → append `STRIPE_WEBHOOK_SECRET`
+- [ ] 5. Import the GitHub repo into Vercel → append `APP_URL`
+- [ ] 6. Push secrets & verify (`npm run deploy:secrets`)
+- [ ] 7. Configure authentication & custom domain
 - [ ] 8. Deploy
 - [ ] 9. Promote the first super admin
 - [ ] 10. Verify the deployment
@@ -43,7 +50,50 @@ Once ready, go to **Project Settings → API** and save:
 
 ---
 
-## Step 2 — Run the Schema Migration
+## Step 2 — Gather All Credentials Into Temporary `.deploy/` Files
+
+This is the time-saving step. In a single pass through the Supabase and Stripe dashboards, collect everything you can and write it into **two throwaway files**, split by where each one is headed. The whole `.deploy/` directory is git-ignored (and is *not* one of your dev env files), so production keys never get committed and never bleed into local development. Step 6 deletes it automatically once the secrets are pushed.
+
+Create both files:
+
+```bash
+mkdir -p .deploy
+
+cat > .deploy/vercel.env <<'EOF'
+VITE_SUPABASE_URL=
+VITE_SUPABASE_KEY=
+EOF
+
+cat > .deploy/supabase.env <<'EOF'
+STRIPE_SECRET_KEY=
+STRIPE_PRICE_BASIC=
+STRIPE_PRICE_PRO=
+STRIPE_WEBHOOK_SECRET=   # leave blank — filled in Step 4
+APP_URL=                 # leave blank — filled in Step 5
+EOF
+```
+
+Keeping them separate means each file pushes cleanly to exactly one destination — no frontend vars leaking into your Supabase function secrets, and vice versa.
+
+Now fill in everything available right now:
+
+| File | Variable | Value | Source |
+|------|----------|-------|--------|
+| `vercel.env` | `VITE_SUPABASE_URL` | `https://<your-project-ref>.supabase.co` | Step 1 |
+| `vercel.env` | `VITE_SUPABASE_KEY` | Your **anon/public** key (`eyJ...`) | Step 1 |
+| `supabase.env` | `STRIPE_SECRET_KEY` | `sk_live_...` | [Stripe → Developers → API keys](https://dashboard.stripe.com/apikeys) |
+| `supabase.env` | `STRIPE_PRICE_BASIC` | `price_...` | [Stripe → Product Catalog](https://dashboard.stripe.com/products) → Basic plan → Price ID |
+| `supabase.env` | `STRIPE_PRICE_PRO` | `price_...` | Same, for your Pro plan product |
+
+**Leave `STRIPE_WEBHOOK_SECRET` and `APP_URL` blank** — they don't exist yet. You'll append them in Steps 4 and 5.
+
+Also keep your **Project Reference ID** handy — Steps 3 and 6 ask for it.
+
+> These files are deployment scratch only. Don't confuse them with `frontend/.env.local` or `supabase/.env`, which hold your *local dev* values and should never contain `sk_live_...` production keys.
+
+---
+
+## Step 3 — Run the Schema Migration
 
 From the repository root, run:
 
@@ -69,9 +119,9 @@ This script will:
 
 ---
 
-## Step 3 — Configure the Stripe Webhook
+## Step 4 — Configure the Stripe Webhook
 
-Stripe must be told where to send payment events (subscription created, payment failed, etc.).
+Stripe must be told where to send payment events (subscription created, payment failed, etc.). The endpoint URL is deterministic from your project ref, so you can do this as soon as the project exists.
 
 1. Go to [Stripe Dashboard → Developers → Webhooks](https://dashboard.stripe.com/webhooks)
 2. Click **Add endpoint**
@@ -84,63 +134,48 @@ Stripe must be told where to send payment events (subscription created, payment 
    - `customer.subscription.updated`
    - `customer.subscription.deleted`
 5. Click **Add endpoint**
-6. Click the newly created endpoint, then **Reveal** the **Signing secret** (`whsec_...`) — save this value, you will need it in Step 6
+6. Click the newly created endpoint, then **Reveal** the **Signing secret** (`whsec_...`)
+7. **Paste it straight into `.deploy/supabase.env`** as `STRIPE_WEBHOOK_SECRET` — no need to remember it for later, it's now in the file Step 6 reads.
 
 ---
 
-## Step 4 — Import the Repo into Vercel
+## Step 5 — Import the Repo into Vercel
 
 1. Go to [vercel.com](https://vercel.com) and click **Add New → Project**
 2. Connect your GitHub account if prompted, then select the `granttrail` repository
 3. On the configuration screen, set the **Root Directory** to `frontend`
 4. Leave the build settings at their defaults (Vercel auto-detects Vite)
-5. **Do not deploy yet** — proceed to Step 5 first
+5. **Do not deploy yet** — proceed to the next steps first
 
-Your app URL will be `https://<project-name>.vercel.app`. Note it — you will need it in Steps 5 and 6.
+Your app URL will be `https://<project-name>.vercel.app`. **Paste it into `.deploy/supabase.env`** as `APP_URL` now. (If you'll use a custom domain, set `APP_URL` to that domain instead — see Step 7.)
 
----
-
-## Step 5 — Set Vercel Environment Variables
-
-In the Vercel project settings, go to **Settings → Environment Variables** and add:
-
-| Variable | Value | Scope |
-|----------|-------|-------|
-| `VITE_SUPABASE_URL` | `https://<your-project-ref>.supabase.co` | Production |
-| `VITE_SUPABASE_KEY` | Your Supabase **anon/public** key (`eyJ...`) | Production |
-
-> **How this works:** These are `VITE_` prefixed variables, so Vite statically embeds them into the compiled JavaScript bundle at build time. There is no `.env.production` file to create or manage — Vercel injects them during the build.
+With that, both deferred values are filled and `.deploy/supabase.env` is complete.
 
 ---
 
-## Step 6 — Set Edge Function Secrets
+## Step 6 — Push Secrets & Verify
 
-The Edge Functions need Stripe credentials to process payments. These are stored securely in Supabase's secrets vault — **never in code or committed files**.
-
-Run from the repository root:
+Both `.deploy/` files are now complete. One command does the rest:
 
 ```bash
-npx supabase secrets set --project-ref <your-project-ref> \
-  STRIPE_SECRET_KEY="sk_live_your_secret_key" \
-  STRIPE_PRICE_BASIC="price_your_basic_price_id" \
-  STRIPE_PRICE_PRO="price_your_pro_price_id" \
-  STRIPE_WEBHOOK_SECRET="whsec_your_webhook_signing_secret" \
-  APP_URL="https://your-app.vercel.app"
+npm run deploy:secrets
 ```
 
-| Secret | Where to get it |
-|--------|----------------|
-| `STRIPE_SECRET_KEY` | [Stripe Dashboard → Developers → API keys](https://dashboard.stripe.com/apikeys) — use the **Secret key** (`sk_live_...`) |
-| `STRIPE_PRICE_BASIC` | [Stripe Dashboard → Product Catalog](https://dashboard.stripe.com/products) — open your Basic plan product, copy the **Price ID** (`price_...`) |
-| `STRIPE_PRICE_PRO` | Same as above, for your Pro plan product |
-| `STRIPE_WEBHOOK_SECRET` | The signing secret you copied in Step 3 (`whsec_...`) |
-| `APP_URL` | Your Vercel app URL from Step 4 (e.g. `https://your-app.vercel.app`) |
+When prompted, enter your **Project Reference ID**. The script:
 
-> You can also view and manage these in the Supabase Dashboard under **Project Settings → Edge Functions → Secrets**.
+1. Validates both files are present and fully filled in (fails fast if `STRIPE_WEBHOOK_SECRET` or `APP_URL` is still blank)
+2. Checks you're logged in to both CLIs and stops with instructions if not
+3. Pushes `supabase.env` → Supabase Edge Function secrets, and `vercel.env` → Vercel **Production** env vars — no key ever touches your shell history
+4. Prints the resulting Supabase and Vercel listings so you can confirm everything landed
+5. **Shreds `.deploy/`** — but only after both pushes succeed; on any failure it leaves the files in place so you can fix and re-run
+
+**Prerequisites:** log in to both CLIs once — `npx supabase login` and `npx vercel login`, then `npx vercel link` to connect this repo to the Vercel project. (The script verifies this before pushing.) If you'd rather not use the Vercel CLI at all, paste the two values from `.deploy/vercel.env` into **Settings → Environment Variables** in the Vercel dashboard; the script is idempotent, so re-running it later overwrites cleanly.
+
+> **Why `VITE_`?** Vite statically embeds those two variables into the compiled bundle at build time, so Vercel injects them during the build — there is no `.env.production` to manage on the server.
 
 ---
 
-## Step 7 — Configure Authentication Settings
+## Step 7 — Configure Authentication & Custom Domain
 
 In the Supabase Dashboard:
 
@@ -148,10 +183,13 @@ In the Supabase Dashboard:
    - Enable **Confirm email** for production (prevents unverified accounts)
 
 2. Go to **Authentication → URL Configuration**
-   - Set **Site URL** to your Vercel URL: `https://your-app.vercel.app`
-   - Under **Redirect URLs**, add: `https://your-app.vercel.app`
+   - Set **Site URL** to your live app URL
+   - Under **Redirect URLs**, add the same URL
 
-If you are using a custom domain on Vercel, add that domain here too.
+**Using a custom domain?** Apply it consistently in all three places, or auth redirects will break:
+- Vercel → **Settings → Domains** (add the domain)
+- Supabase **Site URL** and **Redirect URLs** above (use the custom domain, not `*.vercel.app`)
+- `APP_URL` in Supabase secrets (the value you set in Step 5/6)
 
 ---
 
@@ -193,19 +231,38 @@ Work through this checklist on the live site:
 - [ ] Check the browser developer console for errors
 - [ ] In Stripe Dashboard, confirm the test webhook event received a `200` response
 
+Bootstrap is complete. From here on, use **Part B** for every change.
+
+---
+
+# Part B — Deploying Changes (every time after)
+
+Once bootstrap is done, the infrastructure and secrets stay put. Day-to-day deployment is just:
+
+| You changed… | Do this |
+|--------------|---------|
+| **Code / UI** | `git push origin main` — Vercel auto-builds and ships. (PRs get a preview deploy automatically.) |
+| **The database schema** | Add an incremental migration under `supabase/migrations/` (see [Making Schema Changes](make_schema_changes.md)), then `npm run db:migrate` to apply it to production. This runs `supabase db push` — it applies *new* migrations only and is **non-destructive**. |
+| **A secret** (rotated Stripe key, etc.) | Recreate just the relevant `.deploy/` file with the new value, then `npm run deploy:secrets`. |
+| **The first super admin** | One-time only — see Step 9. |
+
+> **Schema changes are always incremental.** Never edit an already-applied migration or hand-edit the remote database — add a new timestamped file under `supabase/migrations/` and let `db push` apply it. Both `npm run db:migrate` and the bootstrap `npm run db:deploy` use `supabase db push`, which applies only pending migrations and **never drops tables or data**, so neither wipes production. `db:deploy` additionally (re)deploys Edge Functions and provisions the root tenant, so it's still the right command for first-time bootstrap; `db:migrate` is the lean choice for routine schema updates.
+
 ---
 
 ## Reference: All Credentials at a Glance
 
-| Credential | Used In | Where to Find It |
+All seven are gathered into the temporary `.deploy/` files (Step 2), then pushed to their destination and shredded by `npm run deploy:secrets` (Step 6).
+
+| Credential | Goes to | Where to Find It |
 |------------|---------|-----------------|
 | `VITE_SUPABASE_URL` | Vercel env vars | Supabase → Project Settings → API |
 | `VITE_SUPABASE_KEY` | Vercel env vars | Supabase → Project Settings → API (anon/public key) |
 | `STRIPE_SECRET_KEY` | Supabase secrets | Stripe → Developers → API keys |
 | `STRIPE_PRICE_BASIC` | Supabase secrets | Stripe → Product Catalog → Basic plan → Price ID |
 | `STRIPE_PRICE_PRO` | Supabase secrets | Stripe → Product Catalog → Pro plan → Price ID |
-| `STRIPE_WEBHOOK_SECRET` | Supabase secrets | Stripe → Developers → Webhooks → your endpoint → Signing secret |
-| `APP_URL` | Supabase secrets | Your Vercel deployment URL |
+| `STRIPE_WEBHOOK_SECRET` | Supabase secrets | Stripe → Developers → Webhooks → your endpoint → Signing secret (Step 4) |
+| `APP_URL` | Supabase secrets | Your Vercel deployment URL (Step 5) |
 
 ---
 

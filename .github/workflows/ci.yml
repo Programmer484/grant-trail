@@ -38,6 +38,12 @@ jobs:
           VITE_SUPABASE_KEY: dummy-key
         run: npm test
 
+      - name: Verify production build
+        env:
+          VITE_SUPABASE_URL: https://dummy.supabase.co
+          VITE_SUPABASE_KEY: dummy-key
+        run: npm run build
+
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v2
         with:

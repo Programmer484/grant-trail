@@ -46,8 +46,12 @@ CREATE TABLE platform_settings (
   id INT PRIMARY KEY DEFAULT 1 CHECK (id = 1),
   default_support_email VARCHAR(75) NOT NULL DEFAULT 'support@granttrail.org',
   default_support_phone VARCHAR(20) NOT NULL DEFAULT '(555) 123-4567',
-  basic_membership_product_id VARCHAR(255) NOT NULL DEFAULT 'prod_UKEACUGjIeg3MU',
-  premium_membership_product_id VARCHAR(255) NOT NULL DEFAULT 'prod_UDClBMtvFLKyNW'
+  -- Stripe product IDs are NOT hard-coded. They are populated at runtime from the
+  -- configured Stripe price env vars (STRIPE_PRICE_BASIC / STRIPE_PRICE_PRO) by the
+  -- Edge Functions (see ensurePlatformMembershipProductIds in functions/_shared/stripe.ts),
+  -- or set by a super_admin. Keep them nullable so no environment's IDs are baked in.
+  basic_membership_product_id VARCHAR(255),
+  premium_membership_product_id VARCHAR(255)
 );
 
 INSERT INTO platform_settings DEFAULT VALUES;

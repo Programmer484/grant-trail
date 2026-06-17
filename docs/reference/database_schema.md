@@ -79,8 +79,8 @@ Single-row platform-wide configuration managed by the super admin. Provides defa
 | `id` | INT | no | `1` | **PK** — constrained to 1 (single row) |
 | `default_support_email` | VARCHAR(75) | no | `'support@granttrail.org'` | Default support email for all tenants |
 | `default_support_phone` | VARCHAR(20) | no | `'(555) 123-4567'` | Default support phone for all tenants |
-| `basic_membership_product_id` | VARCHAR | no | `'prod_UKEACUGjIeg3MU'` | Stripe product ID for the Basic membership tier |
-| `premium_membership_product_id` | VARCHAR | no | `'prod_UDClBMtvFLKyNW'` | Stripe product ID for the Premium (Org Admin) membership tier |
+| `basic_membership_product_id` | VARCHAR | yes | `NULL` | Stripe product ID for the Basic tier. Not hard-coded — synced from `STRIPE_PRICE_BASIC` by the Edge Functions, or set by a super admin. |
+| `premium_membership_product_id` | VARCHAR | yes | `NULL` | Stripe product ID for the Premium (Org Admin) tier. Not hard-coded — synced from `STRIPE_PRICE_PRO` by the Edge Functions, or set by a super admin. |
 
 **RLS:** Anyone can read. Only super admins can update.
 

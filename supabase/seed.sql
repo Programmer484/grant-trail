@@ -444,6 +444,15 @@ INSERT INTO billing_customers (user_id, stripe_customer_id) VALUES
   ((SELECT id FROM users WHERE email = 'nadia.park@example.com'), 'cus_nadia123'),
   ((SELECT id FROM users WHERE email = 'amara.okafor@example.com'), 'cus_amara123');
 
+-- Configure the membership product IDs for local/dev. In production these are
+-- synced from the Stripe price env vars by the Edge Functions; the schema no
+-- longer hard-codes them, so seed data must set them before inserting
+-- subscriptions (the enforce_subscription_tier_product_match trigger checks them).
+UPDATE platform_settings
+SET basic_membership_product_id = 'prod_UKEACUGjIeg3MU',
+    premium_membership_product_id = 'prod_UDClBMtvFLKyNW'
+WHERE id = 1;
+
 -- Seeding Stripe subscriptions for mock users
 INSERT INTO subscriptions (user_id, stripe_customer_id, stripe_subscription_id, stripe_product_id, stripe_price_id, membership_tier, status, current_period_end) VALUES
   ((SELECT id FROM users WHERE email = 'maria.smith@example.com'), 'cus_maria123', 'sub_maria123', 'prod_UKEACUGjIeg3MU', 'price_maria123', 'basic', 'active', now() + interval '1 year'),

@@ -31,18 +31,22 @@ async function main() {
       throw new Error('Failed to link project. Make sure the Project Ref is correct and you entered the correct database password.');
     }
 
-    console.log('\n💥 Initiating remote database teardown and clean reset...');
-    // Reset remote database: tears down all schemas/tables, applies migrations, skips seed.sql
-    const resetResult = spawnSync('npx', [
-      '--prefix', 'frontend', 'supabase', 'db', 'reset', '--linked', '--no-seed', '--yes'
+    console.log('\n📦 Applying pending schema migrations to the remote database...');
+    // Apply migrations non-destructively: `db push` runs only the migrations that
+    // have not yet been applied to the remote database. It NEVER drops tables or
+    // data, so this script is safe to re-run against a populated production
+    // database. On a brand-new project it applies the full migration history from
+    // scratch. (This is the same primitive as `npm run db:migrate`.)
+    const pushResult = spawnSync('npx', [
+      '--prefix', 'frontend', 'supabase', 'db', 'push', '--linked'
     ], {
       stdio: 'inherit',
       shell: true
     });
-    if (resetResult.status !== 0) {
-      throw new Error('Failed to reset remote database. Ensure you have ownership permissions over the remote database.');
+    if (pushResult.status !== 0) {
+      throw new Error('Failed to apply migrations to the remote database. Ensure the Project Ref is correct and you have permission to run migrations.');
     }
-    console.log('✅ Remote database teardown and schema migrations applied successfully.');
+    console.log('✅ Schema migrations applied successfully (non-destructive).');
 
     console.log('\n⚡ Deploying Supabase Edge Functions...');
     // 1. Deploy authenticated edge functions

@@ -2,6 +2,7 @@
 *:Zone.Identifier
 .vscode/
 .env.local
+.deploy/
 frontend/playwright-report/
 frontend/test-results/
 bin/
