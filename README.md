@@ -59,6 +59,8 @@ npm run dev
 
 The local setup runs completely offline, uses pre-configured deterministic API keys, and seeds test auth users automatically. No manual account creation is needed.
 
+`npm run setup` also installs a git **pre-push hook** (via `core.hooksPath`) that blocks pushes containing local database changes not captured in a migration file. It uses the same Docker-based local stack as `npm run db:start`, so no extra tooling is required — just have Docker running and the local DB started. See [Making Schema Changes](docs/how_to/make_schema_changes.md).
+
 ### Test accounts
 
 | Name | Email | Role |

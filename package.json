@@ -3,7 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "setup": "npm install --prefix frontend && cp frontend/.env.example frontend/.env.local && cp supabase/.env.example supabase/.env",
+    "setup": "npm install --prefix frontend && cp frontend/.env.example frontend/.env.local && cp supabase/.env.example supabase/.env && npm run hooks:install",
+    "prepare": "node scripts/install-git-hooks.js",
+    "hooks:install": "node scripts/install-git-hooks.js",
+    "db:check": "npx --prefix frontend supabase db diff",
     "db:start": "npm run db:start --prefix frontend",
     "db:stop": "npm run db:stop --prefix frontend",
     "db:reset": "npm run db:reset --prefix frontend",

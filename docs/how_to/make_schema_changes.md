@@ -10,6 +10,17 @@ To prevent database drift, merge conflicts, and corruption of production systems
 
 ---
 
+## Enforcement: the pre-push hook
+
+`npm run setup` installs a git **pre-push hook** that runs `supabase db diff` before every push. If your local database has schema changes that aren't captured in a migration file, the push is **blocked** with the exact missing DDL and instructions to generate the migration. This is the automated guard behind the Golden Rule.
+
+- Run the same check anytime with `npm run db:check`.
+- The hook needs Docker running and the local DB started (`npm run db:start`). If it can't reach them, it warns and lets the push through — CI rebuilds the database from migrations as a backstop.
+- Already cloned before this hook existed? Run `npm run hooks:install` once.
+- To bypass intentionally (rare): `git push --no-verify` or `SKIP_DB_DIFF=1 git push`.
+
+---
+
 ## Step-by-Step Schema Update Workflow
 
 Follow this procedure when modifying tables, adding columns, or updating triggers/policies:
