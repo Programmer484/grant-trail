@@ -306,6 +306,20 @@ This script will:
 * Deploy all Edge Functions.
 * Provision the default platform root tenant (`tfac`) and default settings.
 
+### 1.5. Configure Edge Function Secrets (Stripe & App URL)
+Because Edge Functions use Stripe for checkout and subscription synchronization, you must set your Stripe credentials in the remote project's secrets vault.
+
+Run the following CLI command from the repository root:
+```bash
+npx supabase secrets set --project-ref <your-project-ref> \
+  STRIPE_SECRET_KEY="sk_live_your_secret_key" \
+  STRIPE_PRICE_BASIC="price_your_basic_price_id" \
+  STRIPE_PRICE_PRO="price_your_pro_price_id" \
+  STRIPE_WEBHOOK_SECRET="whsec_your_webhook_signing_secret" \
+  APP_URL="https://yourdomain.com"
+```
+*Note: You can also manage and view these secrets in the Supabase Dashboard under **Project Settings → API → Edge Function Secrets**.*
+
 ### 2. Secure Super Admin Creation
 For security, credentials are never committed. To create the first platform administrator, follow the **Promotion Workflow**:
 * Refer to the [Super Admin Promotion How-To Guide](promote_superadmin.md) for step-by-step instructions.

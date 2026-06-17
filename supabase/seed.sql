@@ -430,6 +430,44 @@ WHERE grant_id IN (SELECT id FROM grant_record WHERE status = 'approved');
 
 
 -- ==========================================
+-- SECTION 8: SEED SUBSCRIPTIONS & MEMBERSHIPS
+-- ==========================================
+
+-- Seeding Stripe customers for mock users
+INSERT INTO billing_customers (user_id, stripe_customer_id) VALUES
+  ((SELECT id FROM users WHERE email = 'maria.smith@example.com'), 'cus_maria123'),
+  ((SELECT id FROM users WHERE email = 'jacob.soto@example.com'), 'cus_jacob123'),
+  ((SELECT id FROM users WHERE email = 'faizan.sharp@example.com'), 'cus_faizan123'),
+  ((SELECT id FROM users WHERE email = 'priya.sharma@example.com'), 'cus_priya123'),
+  ((SELECT id FROM users WHERE email = 'david.chen@example.com'), 'cus_david123'),
+  ((SELECT id FROM users WHERE email = 'carlos.lopez@example.com'), 'cus_carlos123'),
+  ((SELECT id FROM users WHERE email = 'nadia.park@example.com'), 'cus_nadia123'),
+  ((SELECT id FROM users WHERE email = 'amara.okafor@example.com'), 'cus_amara123');
+
+-- Seeding Stripe subscriptions for mock users
+INSERT INTO subscriptions (user_id, stripe_customer_id, stripe_subscription_id, stripe_product_id, stripe_price_id, membership_tier, status, current_period_end) VALUES
+  ((SELECT id FROM users WHERE email = 'maria.smith@example.com'), 'cus_maria123', 'sub_maria123', 'prod_UKEACUGjIeg3MU', 'price_maria123', 'basic', 'active', now() + interval '1 year'),
+  ((SELECT id FROM users WHERE email = 'jacob.soto@example.com'), 'cus_jacob123', 'sub_jacob123', 'prod_UKEACUGjIeg3MU', 'price_jacob123', 'basic', 'active', now() + interval '1 year'),
+  ((SELECT id FROM users WHERE email = 'faizan.sharp@example.com'), 'cus_faizan123', 'sub_faizan123', 'prod_UKEACUGjIeg3MU', 'price_faizan123', 'basic', 'active', now() + interval '1 year'),
+  ((SELECT id FROM users WHERE email = 'priya.sharma@example.com'), 'cus_priya123', 'sub_priya123', 'prod_UKEACUGjIeg3MU', 'price_priya123', 'basic', 'active', now() + interval '1 year'),
+  ((SELECT id FROM users WHERE email = 'david.chen@example.com'), 'cus_david123', 'sub_david123', 'prod_UKEACUGjIeg3MU', 'price_david123', 'basic', 'active', now() + interval '1 year'),
+  ((SELECT id FROM users WHERE email = 'carlos.lopez@example.com'), 'cus_carlos123', 'sub_carlos123', 'prod_UKEACUGjIeg3MU', 'price_carlos123', 'basic', 'active', now() + interval '1 year'),
+  ((SELECT id FROM users WHERE email = 'nadia.park@example.com'), 'cus_nadia123', 'sub_nadia123', 'prod_UKEACUGjIeg3MU', 'price_nadia123', 'basic', 'active', now() + interval '1 year'),
+  ((SELECT id FROM users WHERE email = 'amara.okafor@example.com'), 'cus_amara123', 'sub_amara123', 'prod_UDClBMtvFLKyNW', 'price_amara123', 'premium', 'active', now() + interval '1 year');
+
+-- Seeding active memberships for mock users
+INSERT INTO user_memberships (user_id, subscription_id, membership_tier, is_active, source, starts_at) VALUES
+  ((SELECT id FROM users WHERE email = 'maria.smith@example.com'), (SELECT id FROM subscriptions WHERE stripe_subscription_id = 'sub_maria123'), 'basic', true, 'stripe', now()),
+  ((SELECT id FROM users WHERE email = 'jacob.soto@example.com'), (SELECT id FROM subscriptions WHERE stripe_subscription_id = 'sub_jacob123'), 'basic', true, 'stripe', now()),
+  ((SELECT id FROM users WHERE email = 'faizan.sharp@example.com'), (SELECT id FROM subscriptions WHERE stripe_subscription_id = 'sub_faizan123'), 'basic', true, 'stripe', now()),
+  ((SELECT id FROM users WHERE email = 'priya.sharma@example.com'), (SELECT id FROM subscriptions WHERE stripe_subscription_id = 'sub_priya123'), 'basic', true, 'stripe', now()),
+  ((SELECT id FROM users WHERE email = 'david.chen@example.com'), (SELECT id FROM subscriptions WHERE stripe_subscription_id = 'sub_david123'), 'basic', true, 'stripe', now()),
+  ((SELECT id FROM users WHERE email = 'carlos.lopez@example.com'), (SELECT id FROM subscriptions WHERE stripe_subscription_id = 'sub_carlos123'), 'basic', true, 'stripe', now()),
+  ((SELECT id FROM users WHERE email = 'nadia.park@example.com'), (SELECT id FROM subscriptions WHERE stripe_subscription_id = 'sub_nadia123'), 'basic', true, 'stripe', now()),
+  ((SELECT id FROM users WHERE email = 'amara.okafor@example.com'), (SELECT id FROM subscriptions WHERE stripe_subscription_id = 'sub_amara123'), 'premium', true, 'stripe', now());
+
+
+-- ==========================================
 -- VERIFICATION
 -- ==========================================
 

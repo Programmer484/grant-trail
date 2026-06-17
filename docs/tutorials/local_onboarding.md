@@ -90,16 +90,16 @@ When you run `supabase start` (or when you want to start completely fresh):
 2. It automatically applies all SQL migrations in `supabase/migrations/` sequentially.
 3. It automatically executes `supabase/seed.sql` to populate sample tenants, users, grants, budget items, and expenses.
 
-### Bootstrapping Local Auth Users
-Because we have integrated the Auth UUIDs directly into the `supabase/seed.sql` file, **all test users are completely automated**. You do not need to manually create users in the Supabase Studio! 
+### Bootstrapping Local Auth Users & Subscriptions
+Because we have integrated the Auth UUIDs and Stripe membership statuses directly into the `supabase/seed.sql` file, **all test users are completely automated and seeded with active memberships**. You do not need to manually create users or configure Stripe checkout in development to bypass the subscription paywall!
 
 The default test users (with password `password123`) are:
-- `maria.smith@example.com` (Grantee)
-- `jacob.soto@example.com` (Grantee)
-- `faizan.sharp@example.com` (Grantee)
-- `eric.hobbs@example.com` (Admin)
-- `sam.reeves@example.com` (Super Admin)
-- *See `seed.sql` for self-service and managed tenant 2 test accounts.*
+- `maria.smith@example.com` (Grantee - has seeded **Basic** membership)
+- `jacob.soto@example.com` (Grantee - has seeded **Basic** membership)
+- `faizan.sharp@example.com` (Grantee - has seeded **Basic** membership)
+- `eric.hobbs@example.com` (Admin - exempt from subscription checks)
+- `sam.reeves@example.com` (Super Admin - exempt from subscription checks)
+- *See `seed.sql` for other accounts (e.g. Carlos Lopez & Nadia Park also have seeded **Basic** memberships, and Bright Horizons admin Amara Okafor has a seeded **Premium** membership).*
 
 ### Connecting the Frontend
 1. Create or edit `frontend/.env.local`:
