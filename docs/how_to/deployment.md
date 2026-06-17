@@ -253,6 +253,86 @@ Once bootstrap is done, the infrastructure and secrets stay put. Day-to-day depl
 
 ---
 
+# Part C — Safety: Secrets, Backup & Recovery
+
+The Supabase GitHub integration applies migrations and deploys functions on
+merge, but it does **not** set secrets, snapshot the database, or roll back on a
+partial failure. This section is the runbook for those gaps (issue #29).
+
+## Edge-function secret prerequisites
+
+The integration deploys the functions declared in `config.toml`, but they
+**500 at runtime until their secrets exist**. Set secrets *before or immediately
+after* the first deploy of a function — order: **declare in `config.toml` →
+merge (deploys the function) → `npm run deploy:secrets` (sets secrets) → verify**.
+
+`SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` are injected
+automatically by the platform. The secrets **you** must provide:
+
+| Secret | Used by | Required |
+|--------|---------|----------|
+| `STRIPE_SECRET_KEY` | all billing functions | Yes |
+| `STRIPE_WEBHOOK_SECRET` | `stripe-webhook` | Yes |
+| `STRIPE_PRICE_BASIC` | checkout / sync | Yes |
+| `STRIPE_PRICE_PRO` | checkout / sync | Yes |
+| `APP_URL` | checkout / portal redirects | Yes |
+| `STRIPE_PRICE_FISCAL_AGENT_ACCESS` | basic-membership checkout | Only if that plan is used |
+| `STRIPE_BILLING_PORTAL_CONFIGURATION_ID` | billing portal | Optional (Stripe default if unset) |
+
+### Preflight check (run after any deploy that touches functions or secrets)
+
+```bash
+# 1. Confirm every required secret is present in the project
+npx supabase secrets list --project-ref <ref>
+
+# 2. Smoke-test the webhook endpoint is reachable and the function booted
+#    (401/400 = function is up and rejecting an unsigned request; 500 = a
+#    secret is missing or the function crashed on boot)
+curl -i -X POST https://<ref>.supabase.co/functions/v1/stripe-webhook
+```
+
+A `500` from that curl almost always means a missing/blank secret — fix it and
+re-run `npm run deploy:secrets` before sending real traffic.
+
+## Backup before risky migrations
+
+The integration does not snapshot before applying. Before merging a migration
+that contains `DROP`, `ALTER ... TYPE`, a `NOT NULL` add, or any
+backfill/data-mutating statement:
+
+1. Confirm **Point-in-Time Recovery** is enabled (Dashboard → Database → Backups),
+   **or** take a manual logical dump as an explicit restore point:
+   ```bash
+   npx supabase db dump --linked -f backups/pre-deploy-$(date +%Y%m%d-%H%M).sql
+   ```
+2. Note the **commit SHA** and timestamp of the merge — the integration has no
+   built-in audit trail, so record who merged what and when (the PR + merge
+   commit is the lightweight version of this).
+
+Plain additive migrations (new table/column/policy, like the subscription-gating
+migration) do not need a manual dump — PITR is sufficient.
+
+## Partial-failure recovery runbook
+
+A merge can leave production half-applied: a migration succeeds but a function
+deploy fails, or vice versa. Diagnose and recover:
+
+| Symptom | Likely cause | Recovery |
+|---------|--------------|----------|
+| Migration applied, function not updated | Function not declared in `config.toml`, or integration deploy step failed | Add/fix the `[functions.*]` entry and re-merge (or `npx supabase functions deploy <name> --project-ref <ref>` as a manual escape hatch) |
+| Function deployed, migration failed | Migration errored against real prod state (e.g. constraint violated by existing rows) | The ledger only records *applied* migrations, so the failed one is **not** marked done. Fix the migration in a new commit and re-merge; nothing was partially committed (each migration runs in its own transaction) |
+| Function returns 500 after deploy | Missing secret | Run the preflight check above, set the secret, no redeploy needed |
+| Bad data written before you caught it | Destructive/incorrect migration | Restore via PITR to just before the merge timestamp, or `psql` the manual dump from the backup step |
+
+**Key invariant:** each migration applies in its own transaction and is only
+recorded in the ledger on success — so a failed migration never leaves a
+half-applied schema. The risk is *cross-resource* inconsistency (schema vs.
+functions vs. secrets), which the table above addresses. When in doubt, the
+safe order to re-establish consistency is: **migrations → functions → secrets →
+preflight**.
+
+---
+
 ## Reference: All Credentials at a Glance
 
 All seven are gathered into the temporary `.deploy/` files (Step 2), then pushed to their destination and shredded by `npm run deploy:secrets` (Step 6).
