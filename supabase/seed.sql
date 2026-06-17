@@ -37,15 +37,19 @@ VALUES
 -- SECTION 1: TENANT
 -- ==========================================
 
+-- tfac is also created by the bootstrap migration (it ships to production,
+-- which never runs this seed). ON CONFLICT keeps the seed runnable on top of it.
 INSERT INTO tenants (name, slug, tenant_type) VALUES
   ('The Family Advocates Canada', 'tfac', 'managed'),
   ('Bright Horizons Foundation', 'bright-horizons', 'managed'),
   ('Lopez Consulting', 'lopez-consulting', 'self_service'),
-  ('Greenleaf Bookkeeping', 'greenleaf', 'self_service');
+  ('Greenleaf Bookkeeping', 'greenleaf', 'self_service')
+ON CONFLICT (slug) DO NOTHING;
 
 INSERT INTO tenant_settings (tenant_id) VALUES
   ((SELECT id FROM tenants WHERE slug = 'tfac')),
-  ((SELECT id FROM tenants WHERE slug = 'bright-horizons'));
+  ((SELECT id FROM tenants WHERE slug = 'bright-horizons'))
+ON CONFLICT (tenant_id) DO NOTHING;
 
 INSERT INTO tenant_settings (tenant_id, require_grant_approval, require_budget_approval, require_expense_approval) VALUES
   ((SELECT id FROM tenants WHERE slug = 'lopez-consulting'), false, false, false),
