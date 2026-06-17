@@ -1,6 +1,6 @@
 # Database Schema Reference
 
-This document describes every table, column, constraint, and trigger in the GrantTrail database. The full SQL is in `supabase/migrations/20260616000000_initial_schema.sql`.
+This document describes every table, column, constraint, and trigger in the GrantTrail database. The full SQL is in `supabase/migrations/20260616000000_initial_schema.sql`. For a per-table Row-Level Security policy audit, see [rls_policy_audit.md](rls_policy_audit.md).
 
 ---
 
