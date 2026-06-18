@@ -1,4 +1,9 @@
 import { adminSupabase, corsHeaders, buildRedirectUrl, ensurePlatformMembershipProductIds, getOrCreateStripeCustomer, requireAuthenticatedProfile, stripe } from '../_shared/stripe.ts';
+import { assertPostRequest, parseJsonBody, validateFeatureKey, validateReturnPath, ValidationError } from '../_shared/validation.ts';
+
+// `basic_membership` is included because the frontend falls back to this function
+// (with that key) when the dedicated basic-checkout function is unavailable.
+const ALLOWED_FEATURE_KEYS = ['admin_membership', 'premium_membership', 'excel_export', 'basic_membership'];
 
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') {
@@ -6,8 +11,11 @@ Deno.serve(async (request) => {
   }
 
   try {
+    assertPostRequest(request);
     const { profile } = await requireAuthenticatedProfile(request.headers.get('Authorization'));
-    const { returnPath = '/', featureKey = 'admin_membership' } = await request.json().catch(() => ({}));
+    const body = await parseJsonBody(request);
+    const returnPath = validateReturnPath(body.returnPath);
+    const featureKey = validateFeatureKey(body.featureKey, ALLOWED_FEATURE_KEYS, 'admin_membership');
     const stripePriceId = Deno.env.get('STRIPE_PRICE_FISCAL_AGENT_ACCESS') || Deno.env.get('STRIPE_PRICE_PRO');
 
     if (!stripePriceId) {
@@ -44,6 +52,12 @@ Deno.serve(async (request) => {
       status: 200,
     });
   } catch (error) {
+    if (error instanceof ValidationError) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      });
+    }
     console.error('Checkout session error:', error);
     try {
       await adminSupabase.from('system_logs').insert({

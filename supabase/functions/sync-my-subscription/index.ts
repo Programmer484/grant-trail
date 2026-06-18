@@ -1,4 +1,5 @@
 import { adminSupabase, corsHeaders, getOrCreateStripeCustomer, requireAuthenticatedProfile, stripe, upsertSubscriptionFromStripe } from '../_shared/stripe.ts';
+import { assertPostRequest, ValidationError } from '../_shared/validation.ts';
 
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') {
@@ -6,6 +7,7 @@ Deno.serve(async (request) => {
   }
 
   try {
+    assertPostRequest(request);
     const { profile } = await requireAuthenticatedProfile(request.headers.get('Authorization'));
     const customerId = await getOrCreateStripeCustomer(profile);
 
@@ -54,6 +56,12 @@ Deno.serve(async (request) => {
       },
     );
   } catch (error) {
+    if (error instanceof ValidationError) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      });
+    }
     console.error('Subscription sync error:', error);
     try {
       await adminSupabase.from('system_logs').insert({

@@ -1,4 +1,5 @@
 import { adminSupabase, corsHeaders, stripe, upsertSubscriptionFromStripe } from '../_shared/stripe.ts';
+import { assertPostRequest, ValidationError } from '../_shared/validation.ts';
 
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') {
@@ -6,6 +7,7 @@ Deno.serve(async (request) => {
   }
 
   try {
+    assertPostRequest(request);
     const stripeWebhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
     const signature = request.headers.get('stripe-signature');
     const payload = await request.text();
@@ -63,6 +65,12 @@ Deno.serve(async (request) => {
       status: 200,
     });
   } catch (error) {
+    if (error instanceof ValidationError) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      });
+    }
     console.error('Webhook error:', error);
     try {
       await adminSupabase.from('system_logs').insert({

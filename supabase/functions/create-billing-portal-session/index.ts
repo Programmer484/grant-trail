@@ -1,4 +1,5 @@
 import { adminSupabase, buildRedirectUrl, corsHeaders, getOrCreateStripeCustomer, requireAuthenticatedProfile, stripe } from '../_shared/stripe.ts';
+import { assertPostRequest, parseJsonBody, validateReturnPath, ValidationError } from '../_shared/validation.ts';
 
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') {
@@ -6,8 +7,10 @@ Deno.serve(async (request) => {
   }
 
   try {
+    assertPostRequest(request);
     const { profile } = await requireAuthenticatedProfile(request.headers.get('Authorization'));
-    const { returnPath = '/' } = await request.json().catch(() => ({}));
+    const body = await parseJsonBody(request);
+    const returnPath = validateReturnPath(body.returnPath);
     const customerId = await getOrCreateStripeCustomer(profile);
     const portalConfigurationId = Deno.env.get('STRIPE_BILLING_PORTAL_CONFIGURATION_ID') || undefined;
 
@@ -22,6 +25,12 @@ Deno.serve(async (request) => {
       status: 200,
     });
   } catch (error) {
+    if (error instanceof ValidationError) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 400,
+      });
+    }
     console.error('Billing portal session error:', error);
     try {
       await adminSupabase.from('system_logs').insert({
