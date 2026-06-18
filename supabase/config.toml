@@ -410,6 +410,11 @@ verify_jwt = true
 enabled = true
 verify_jwt = false
 
+# TEMPORARY — deploy verification canary, remove after confirming live deploy.
+[functions.deploy-canary]
+enabled = true
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327
