@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { FaCheckCircle, FaBuilding, FaShieldAlt, FaSyncAlt } from 'react-icons/fa';
+import * as Sentry from '@sentry/react';
+import { FaCheckCircle, FaBuilding, FaShieldAlt, FaSyncAlt, FaExclamationTriangle } from 'react-icons/fa';
 import {
   MEMBERSHIP_TIERS,
   isOrgAdminSubscriptionRequired,
@@ -7,6 +8,18 @@ import {
   startCheckoutSession,
 } from '../lib/billing';
 import './SubscriptionPage.css';
+
+// Billing Edge Function calls go through Stripe; if Stripe is unreachable the
+// request can hang, so cap how long we wait before treating it as unavailable.
+const BILLING_REQUEST_TIMEOUT_MS = 15000;
+
+function withTimeout(promise, ms) {
+  let timeoutId;
+  const timeout = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error('Billing request timed out.')), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timeoutId));
+}
 
 function PlanCard({
   title,
@@ -53,7 +66,7 @@ function SubscriptionPage({ session, onMembershipUpdated }) {
   const isAdmin = role === 'admin';
   const [checkoutTier, setCheckoutTier] = useState(null);
   const [portalLoading, setPortalLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [billingUnavailable, setBillingUnavailable] = useState(false);
   const [syncNotice, setSyncNotice] = useState('');
 
   const isWaived = membership?.membership?.source === 'manual';
@@ -122,28 +135,35 @@ function SubscriptionPage({ session, onMembershipUpdated }) {
   const fiscalButtonLabel = isAdmin ? 'Start Managing Smarter' : 'For fiscal agent admins';
 
   const handleCheckout = async (tier) => {
-    setErrorMessage('');
+    setBillingUnavailable(false);
     setCheckoutTier(tier);
     try {
-      const { url } = await startCheckoutSession({
-        membershipTier: tier,
-        returnPath: '/subscription',
-      });
+      const { url } = await withTimeout(
+        startCheckoutSession({ membershipTier: tier, returnPath: '/subscription' }),
+        BILLING_REQUEST_TIMEOUT_MS,
+      );
       window.location.assign(url);
     } catch (error) {
-      setErrorMessage(error?.message || 'Unable to start checkout. Please try again.');
+      // Stripe is unreachable / slow — degrade gracefully instead of surfacing a
+      // raw error, and report the real cause to Sentry for diagnosis.
+      Sentry.captureException(error);
+      setBillingUnavailable(true);
       setCheckoutTier(null);
     }
   };
 
   const handleManageBilling = async () => {
-    setErrorMessage('');
+    setBillingUnavailable(false);
     setPortalLoading(true);
     try {
-      const { url } = await startBillingPortalSession({ returnPath: '/subscription' });
+      const { url } = await withTimeout(
+        startBillingPortalSession({ returnPath: '/subscription' }),
+        BILLING_REQUEST_TIMEOUT_MS,
+      );
       window.location.assign(url);
     } catch (error) {
-      setErrorMessage(error?.message || 'Unable to open billing portal. Please try again.');
+      Sentry.captureException(error);
+      setBillingUnavailable(true);
       setPortalLoading(false);
     }
   };
@@ -178,7 +198,12 @@ function SubscriptionPage({ session, onMembershipUpdated }) {
           </div>
         )}
 
-        {errorMessage && <div className="subscription-error">{errorMessage}</div>}
+        {billingUnavailable && (
+          <div className="subscription-billing-unavailable" role="alert">
+            <FaExclamationTriangle />
+            <span>Billing is temporarily unavailable — please try again later.</span>
+          </div>
+        )}
       </div>
 
       <div className="subscription-plans-grid">
