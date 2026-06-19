@@ -21,7 +21,7 @@ A working task list for AI agents. Human (Ryan) provides high-level oversight: m
 ## Phase 0 — Unblock (do first; mostly human)
 
 - [ ] 🟠 Buy paid tiers: Supabase Pro (PITR/daily backups), Vercel, GitHub Pro **or** make repo public (branch protection)
-- [ ] 🟠 Stripe test-mode: test keys + products/prices for basic & premium tiers + `stripe listen` webhook forwarding
+- [x] 🟠 Stripe test-mode: test keys + prices (basic + fiscal-agent) staged in gitignored `supabase/functions/.env`; webhook secret generated. **Unblocks WS5 / Lane F.**
 - [ ] 🟠 Create the production line: separate prod GitHub repo + its own Supabase project, wired via the Supabase GitHub integration
 
 ---

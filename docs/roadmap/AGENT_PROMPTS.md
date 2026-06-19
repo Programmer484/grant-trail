@@ -60,6 +60,18 @@ Launch each by pasting `/goal <prompt>` into a fresh Claude Code session (the pe
 
 ---
 
+## Lane F — Full payment testing (WS5) — UNBLOCKED 2026-06-19
+
+Stripe TEST-mode secret key, webhook signing secret, and both price IDs are staged in the gitignored `supabase/functions/.env` (main checkout). Prices: `STRIPE_PRICE_BASIC` (GrantTrail basic) and `STRIPE_PRICE_FISCAL_AGENT_ACCESS` (Fiscal agent access). Needs the local Supabase stack → serializes with Lanes B/C/D.
+
+```
+/goal Build full payment-flow tests for GrantTrail's Stripe integration against TEST mode. The five edge functions are create-checkout-session, create-basic-membership-checkout-session, create-billing-portal-session, sync-my-subscription, stripe-webhook (in supabase/functions/). Stripe is the source of truth; the DB (subscriptions, user_memberships tables) is a webhook-synced projection — webhook reliability + idempotency is the core thing to prove. Copy the staged secrets into this worktree's supabase/functions/.env (STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_PRICE_BASIC, STRIPE_PRICE_FISCAL_AGENT_ACCESS, APP_URL) — they are TEST-mode; never commit them. Bring up the stack (npm run db:start) and serve functions; use `stripe listen --forward-to` for the webhook loop and `stripe trigger` / the test cards for events. Cover: (a) webhook matrix — checkout.session.completed, customer.subscription.created/updated/deleted, invoice.payment_failed, past_due — asserting the resulting subscriptions / user_memberships DB end-state; (b) both checkout functions for basic and fiscal-agent tiers, success + cancel; (c) billing-portal + sync-my-subscription reflecting upgrade/downgrade/cancel; (d) edge cases — webhook idempotency (same event twice = same state), waiver/exemption interacting with a live subscription, lapse->reactivate. Add the .sh/integration tests under supabase/functions/tests/. Work ONLY within supabase/functions/ (and supabase/functions/.env locally). Do NOT touch frontend/, supabase/migrations/, .github/, or scripts/ (Lane D owns CI wiring — leave a note in your PR for which tests should gate). Tests must pass locally; stop the stack when done. Work in a git worktree and commit on your branch (do not push). Report back: branch, tests added, the webhook end-state matrix you proved, and any idempotency/lapse gaps found. Context: docs/roadmap/AGENT_TASKS.md (WS5).
+```
+
+> Note for spawning: pass the actual TEST-mode key values in the launch prompt (the agent's fresh worktree won't have the main checkout's untracked `.env`). They're sandbox keys — no real charges.
+
+---
+
 ## Notes for the orchestrator
 
 - **Recommended order if not fully parallel:** Lane A first (its guard cleanup is foundational and changes route behavior the e2e suite asserts), then B/C/D/E in parallel. E and B are the safest to run anytime.
