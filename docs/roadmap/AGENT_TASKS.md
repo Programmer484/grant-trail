@@ -9,6 +9,13 @@ A working task list for AI agents. Human (Ryan) provides high-level oversight: m
 - Check a box only when the work is merged-ready (code + tests + verification), not when drafted.
 - Companion doc with rationale, concepts, and time estimates: `grant-trail-production-breakdown.md` (kept in Ryan's home dir).
 
+**Decisions resolved (2026-06-19)** — these were open 🔴 questions, now settled:
+- **#40 lapsed admin → read-only degrade.** View everywhere, all mutations blocked → billing nudge.
+- **#29 tenant-agnosticism → do it now.** Make platform-root tenant config/flag-driven; drop the `'tfac'` literal before prod.
+- **Pay-before-signup → fully pay-first (anonymous checkout).** Fiscal-agent org pays with no account; on payment they get an admin-signup link, then invite their agents/non-profits.
+- **Security pass → basic cyber-hygiene baseline** (OWASP basics, no formal framework). Scheduled last.
+- **Out of agent scope** (a team member owns these): Payment Confirmation & Receipt Emails; Paywall for Registered Charities List.
+
 ---
 
 ## Phase 0 — Unblock (do first; mostly human)
@@ -33,9 +40,10 @@ A working task list for AI agents. Human (Ryan) provides high-level oversight: m
 - [ ] 🔴 Human confirms the matrix matches intent; reconcile any surprises (a role doing something it shouldn't, or vice versa)
 - [ ] 🟢 Document that billing-exemption (`isExempt`/waiver) is **orthogonal** to role (feeds WS3/WS4)
 
-### WS4 — Billing-lapse lockout policy (#40)
-- [ ] 🔴 Human decides: (a) full lockout / status-quo, (b) read-only degrade, (c) carve-out keeping audit log + export reachable
-- [ ] 🟢 Implement chosen policy (trivial on top of WS3 guards). Skip if (a).
+### WS4 — Billing-lapse policy (#40) — DECIDED: read-only degrade
+- [x] 🔴 Decided: **read-only degrade** — lapsed admin can view everything but cannot mutate (no approvals, edits, invites)
+- [ ] 🟢 Implement: on top of WS3 guards, gate all admin *mutations* behind active subscription while leaving reads open; write attempts → billing nudge
+- [ ] 🟢 Tests: lapsed admin can load every admin view; every mutation path is blocked + nudges
 
 ---
 
@@ -66,7 +74,7 @@ Real boundary is Postgres RLS, **not** UI guards. Prove it.
 - [ ] 🟠 Secrets: none in repo/CI logs; restricted Stripe keys; service-role key never reaches client (cf. `grant_service_role_insert_system_logs` migration)
 - [ ] 🟢 Storage: receipt/attachment buckets enforce tenant scoping on read URLs
 - [ ] 🟢 Run `/security-review` on the branch; triage findings
-- [ ] 🔴 Data-protection policy: PII inventory, retention, export/delete posture (overlaps WS8 "Security & Data Protection")
+- [ ] 🟢 Data-protection pass — DECIDED: **basic cyber-hygiene baseline** (OWASP basics, secrets hygiene, RLS proofs, dep/vuln scan, secure headers, least-privilege keys). Checklist + findings report, no formal framework. **Do this last.**
 
 ---
 
@@ -78,7 +86,7 @@ Model already decided (Option A: Supabase GitHub integration owns migrations + e
 - [ ] 🟠 Branch protection: require CI + Supabase status check before merge to `main` (#8)
 - [ ] 🟢 CI migration safety w/o prod access: base-branch migrations on a fresh DB, then PR migrations on top; synthetic fixtures only, never a prod dump (#39; partly done via migration-replay job)
 - [ ] 🟢 Wire edge-function `.sh` tests into CI (only `system-logs-failure.test.sh` runs today); broaden + gate (#39)
-- [ ] 🔴 `config.toml` tenant-agnosticism: remove hard-coded `'tfac'` slug from SECURITY DEFINER logic; make flag/config-driven (#29) — needs naming/config-shape decision
+- [ ] 🟢 `config.toml` tenant-agnosticism (#29) — DECIDED: do it now. Remove hard-coded `'tfac'` slug from SECURITY DEFINER logic; make platform-root tenant flag/config-driven (e.g. `platform_root_slug()`). Propose the config shape in the PR.
 - [ ] 🟢 Define + document the staging→prod promotion flow; prod auth/secrets/domain bootstrap (#39)
 
 ---
@@ -86,16 +94,26 @@ Model already decided (Option A: Supabase GitHub integration owns migrations + e
 ## Phase 4 — Feature roadmap (each needs its own mini-spec first)
 
 Depends on Phases 1/2/3 being solid (don't paywall on a shaky billing path).
-- [ ] 🟠 **Payment Confirmation & Receipt Emails** — transactional email on successful payment (needs email provider)
-- [ ] 🔴 **Paywall for Registered Charities List** — gate a data view behind subscription (decide which tier)
-- [ ] 🔴 **Security & Data Protection** — hardening + policy surface (overlaps WS7 data-protection)
-- [ ] 🔴 **Fiscal Agent Listing — Subscription-Based Charity Profiles** — new listing/profile entity + subscription tie-in (decide data model)
-- [ ] 🔴 **Pay-Before-Signup Flow** — invert current model (pay → then create account). Touches Stripe checkout w/ no user yet → reconcile on account creation, auth flow, and RLS (paid-but-unprovisioned state). Dedicated design pass required.
+
+- [ ] 🔴 **Pay-First Fiscal-Agent Flow** — DECIDED: fully pay-first (anonymous checkout). Needs a dedicated design pass first. Shape:
+  1. Org runs Stripe checkout with **no account existing** (Fiscal Agent subscription)
+  2. On successful payment → email an **admin-signup link**; account creation **reconciles** the Stripe customer/subscription to the new admin user
+  3. Handle the **paid-but-unprovisioned** state (subscription exists, no user yet) safely in RLS
+  4. Provisioned admin then issues invite links to their downstream agents/non-profits (existing invite system)
+- [ ] 🔴 **Fiscal Agent Listing — Subscription-Based Charity Profiles** — new listing/profile entity for charities acting as fiscal agents; ties to the pay-first subscription. Needs a data-model spec (relates to the pay-first flow above).
 - [ ] 🟠 **Upgrade Supabase & test 1,000+ users** — scale validation; k6 script in `tests/load/k6-load-test.js` (needs paid tier)
+- [ ] 🟢 **Security & Data Protection** — basic cyber-hygiene baseline; see WS7 (do last)
+
+**Owned by a team member (NOT agent scope):**
+- ~~Payment Confirmation & Receipt Emails~~
+- ~~Paywall for Registered Charities List~~ — note: viewing the fiscal-agent charities list requires a subscription (team member implements)
 
 ---
 
-## Decisions owed by the human (blocking queue)
-1. 🔴 #40 — lapsed-admin policy: full lockout vs. read-only vs. carve-out
-2. 🔴 #29 — `config.toml` tenant-agnosticism: how the platform-root tenant is named/flagged
-3. 🔴 Phase 4 — charities-paywall tier; fiscal-agent data model; pay-before-signup UX; data-protection/retention policy
+## Decisions — status
+
+**Resolved (2026-06-19):** #40 (read-only degrade) · #29 (config-driven now) · pay-first (anonymous checkout) · security level (basic baseline) · emails + charities-paywall (team member owns).
+
+**Still owed (specs, not yes/no — defer until Phase 4):**
+1. 🔴 Pay-first flow: detailed design pass (checkout-with-no-user, customer reconciliation, paid-but-unprovisioned RLS state)
+2. 🔴 Fiscal Agent Listing: charity-profile data model
