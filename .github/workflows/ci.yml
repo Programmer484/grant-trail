@@ -160,11 +160,12 @@ jobs:
           APP_URL="http://localhost:3000"
           ENVEOF
           serve_functions_and_wait supabase/.env || exit 1
-          # FAST tier: local-stack-only tests (no Stripe forwarder). The payment
-          # lane will add checkout-sessions.test.sh here; absent files are skipped.
+          # FAST tier: local-stack-only tests (no Stripe forwarder, no live Stripe
+          # API). checkout-sessions.test.sh is deliberately NOT here — it makes
+          # real Stripe API calls (a dummy key 401s) and is owned by the
+          # stripe-edge-function-tests job via run-all.sh. Absent files are skipped.
           mapfile -t FAST_TESTS < <(select_tests \
-            system-logs-failure.test.sh \
-            checkout-sessions.test.sh)
+            system-logs-failure.test.sh)
           run_tests "${FAST_TESTS[@]}"
           status=$?
           stop_functions
@@ -201,8 +202,23 @@ jobs:
 
       - name: Setup Stripe CLI
         if: steps.guard.outputs.present == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          curl -fsSL https://cli.stripe.com/install.sh | bash
+          set -euo pipefail
+          # The Stripe CLI ships as a static binary in GitHub Releases; there is
+          # no cli.stripe.com installer host (the old URL fails DNS resolution).
+          # Resolve the latest release tag (authenticated, to dodge rate limits)
+          # and drop the linux x86_64 binary on PATH.
+          ver="$(curl -fsSL -H "Authorization: Bearer ${GH_TOKEN}" \
+            https://api.github.com/repos/stripe/stripe-cli/releases/latest \
+            | grep -oP '"tag_name":\s*"v\K[^"]+' || true)"
+          ver="${ver:-1.21.8}"
+          echo "Installing Stripe CLI v${ver}"
+          curl -fsSL "https://github.com/stripe/stripe-cli/releases/download/v${ver}/stripe_${ver}_linux_x86_64.tar.gz" \
+            -o /tmp/stripe.tar.gz
+          tar -xzf /tmp/stripe.tar.gz -C /tmp stripe
+          sudo install -m 0755 /tmp/stripe /usr/local/bin/stripe
           stripe version
 
       - name: Start Supabase
