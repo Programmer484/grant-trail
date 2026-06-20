@@ -52,6 +52,11 @@ These two terms are used throughout the codebase and documentation. They are rel
   - [3.7 RLS — No Changes Beyond Multi-Tenancy](#37-rls--no-changes-beyond-multi-tenancy)
   - [3.8 Effort Compared to Multi-Tenancy and Approval Config](#38-effort-compared-to-multi-tenancy-and-approval-config)
   - [3.9 Implementation Sequence](#39-implementation-sequence)
+- [4. Authorization vs Billing (Two Orthogonal Axes)](#4-authorization-vs-billing-two-orthogonal-axes)
+  - [4.1 Single Source of Truth — lib/policy.js](#41-single-source-of-truth--libpolicyjs)
+  - [4.2 Declarative Guards — lib/guards.js](#42-declarative-guards--libguardsjs)
+  - [4.3 Read-Only Degrade for Lapsed Admins (#40)](#43-read-only-degrade-for-lapsed-admins-40)
+  - [4.4 Role-Based Route Homes (#41 / D1)](#44-role-based-route-homes-41--d1)
 
 ---
 
@@ -231,7 +236,26 @@ Paths include a tenant prefix to prevent cross-tenant file access:
 | `receipts` | `receipts/{grant_id}/{expense_id}/{ts}.{ext}` | `receipts/{tenant_id}/{grant_id}/{expense_id}/{ts}.{ext}` |
 | `grant-documents` | `attachments/{grant_id}/{ts}-{filename}` | `attachments/{tenant_id}/{grant_id}/{ts}-{filename}` |
 
-Storage RLS policies also include `tenant_id` checks — they rely on the `receipts` and `grant_attachments` table rows, which carry `tenant_id` after the schema change, so storage policies join against those tables.
+Storage RLS is enforced **by path**, not by joining the application tables. Each object's owning tenant is the **second path segment**, and a helper extracts it:
+
+```sql
+-- storage_object_tenant_id(name) returns the 2nd folder segment as an int
+-- (NULL on a malformed/too-shallow path, which then fails every equality check).
+SELECT (storage.foldername(name))[2]::int;
+```
+
+Every `storage.objects` policy on the `grant-documents` and `receipts` buckets requires that segment to equal the caller's own tenant:
+
+```sql
+AND storage_object_tenant_id(name) = current_tenant_id()
+```
+
+| Bucket | Path (tenant is segment 2) |
+|--------|----------------------------|
+| `grant-documents` | `attachments/<tenant_id>/<grant_id>/<file>` |
+| `receipts` | `receipts/<tenant_id>/<grant_id>/<expense_id>/<file>` |
+
+`super_admin` keeps a **tenant-agnostic read** (the SELECT policies `OR public.is_super_admin()`); insert and delete stay strictly on the caller's own tenant path. This closed a critical gap (D5) where the object policies only checked `auth.uid() IS NOT NULL`, so any authenticated user of any tenant could read, overwrite, or delete another tenant's files even though the `grant_attachments` / `receipts` *table rows* were tenant-scoped. See [`rls-audit.md`](../roadmap/rls-audit.md).
 
 ---
 
@@ -250,6 +274,10 @@ Options (implemented as option 1):
 - Or manage platform admins via a separate table entirely, keeping the `users` table role constraint unchanged
 
 Super admin UI is a separate set of pages (tenant list, tenant creation, cross-tenant grant overview).
+
+**Role/tenant integrity is enforced at the DB level.** A `BEFORE UPDATE` trigger on `users` (`enforce_user_self_update_guard`) freezes the privilege-bearing columns — `role`, `tenant_id`, `is_active` — for self-updates. Only `service_role`, `is_admin()`, and `is_super_admin()` contexts may change them, which closed a critical privilege-escalation gap where a grantee could self-promote to `super_admin` (global) or hop tenants. Grant inserts likewise **derive `tenant_id` authoritatively** from the owning user / parent grant, overwriting any client-supplied value. See [`rls-audit.md`](../roadmap/rls-audit.md).
+
+**The platform-root tenant is config-driven**, not hardcoded. Its slug lives on `platform_settings.platform_root_slug` (default `'tfac'`), read via `platform_root_slug()` and compared via `is_platform_root_tenant(slug, name)`. The platform-root admin is treated as billing-exempt (see [Section 4](#4-authorization-vs-billing-two-orthogonal-axes)). To re-point for another operator: `UPDATE platform_settings SET platform_root_slug = '<new-slug>'`.
 
 ---
 
@@ -286,7 +314,7 @@ Most components require no changes — RLS handles isolation automatically and q
 #### New user onboarding
 
 With multi-tenancy, a new user needs to be assigned to a tenant. Options:
-- **Invite links** — tenant admin generates a link containing a token tied to their `tenant_id`; signup consumes the token
+- **Invite links** — tenant admin generates a link containing a token tied to their `tenant_id` and `role`; signup reads the invite and, after auth, consumes the token (see [Section 3.2](#32-two-completely-different-signup-flows) and [authentication_flow.md](authentication_flow.md) for the token-scoped RPC details)
 - **Admin provisioning** — super admin creates the user account and assigns the tenant
 - **Self-service tenant creation** — signup creates both a new user and a new tenant in one flow
 
@@ -589,9 +617,14 @@ Super admin creates tenant
     -> Sets tenant_type = 'managed', approval settings
     -> Generates invite link (contains a short-lived token tied to tenant_id + role)
         -> Invited admin clicks link -> /signup?invite=<token>
-        -> Signup creates user row with tenant_id and role from token
+        -> Signup reads the single invite via the get_invite_by_token(token) RPC
+           (the invites table is no longer anon-readable — D7)
+        -> After auth, complete-profile creates the user row with tenant_id and
+           role from the invite, then marks it consumed via consume_invite(token, user_id)
         -> Managed admin can then invite grantees the same way
 ```
+
+The invite is **read** through a token-scoped `SECURITY DEFINER` RPC (`get_invite_by_token`) rather than a direct table select, and **consumed** through `consume_invite(token, user_id)` (token-scoped, enforces `auth.uid()`, idempotent). The `invites` table itself is no longer readable or writable by `anon`/the just-signed-up user. See [authentication_flow.md](authentication_flow.md) and [`rls-audit.md`](../roadmap/rls-audit.md).
 
 #### Self-service — open signup
 
@@ -740,3 +773,68 @@ Building on the sequences in Sections 1 and 2:
 7. Add `tenantConfig.type` conditional rendering across grantee UI components
 8. Build super admin tenant management pages
 9. Optionally: design the self-service to managed upgrade path
+
+---
+
+## 4. Authorization vs Billing (Two Orthogonal Axes)
+
+Route access in GrantTrail is decided along **two independent axes**, kept deliberately separate (issue #41). Historically these were tangled into a single ternary and a single `/home` redirect in `App.js`.
+
+| Axis | Question | Failure redirect |
+|------|----------|------------------|
+| **Role** (authorization) | Who is the user? (`super_admin` / `admin` / `grantee` / logged-out) | Role redirect — `/login` or a role's home |
+| **Billing** (subscription) | Does the user have the subscription their role requires? | Billing nudge — `/subscription` (or `/home` for grantees) |
+
+### 4.1 Single Source of Truth — `lib/policy.js`
+
+[`frontend/src/lib/policy.js`](../../frontend/src/lib/policy.js) is the one place both decisions live. It exports pure predicates:
+
+- `getRole(session)`, `isAuthenticated(session)` — role axis primitives
+- `hasRequiredSubscription(session)` — the single subscription rule:
+  - `super_admin` → always (exempt by role)
+  - `admin` → `membership.isExempt` (waived / platform-root admin) **or** `membership.hasPremiumAccess`
+  - `grantee` → `membership.hasBasicAccess`
+- `needsSubscription(session)` — authenticated non-super-admin lacking the required subscription
+- `canMutate(session)` / `isReadOnlyAdmin(session)` — the read-only-lapse gate (see [Section 4.3](#43-read-only-degrade-for-lapsed-admins-40))
+
+> Billing exemption is role- and tenant-driven on the backend, not hardcoded. A platform-root tenant's admin is exempt; the platform root is identified config-driven via `platform_settings.platform_root_slug` (default `'tfac'`) and the `is_platform_root_tenant()` helper — see [Section 1.6](#16-roles--super-admin-vs-tenant-admin) and [`rls-audit.md`](../roadmap/rls-audit.md).
+
+### 4.2 Declarative Guards — `lib/guards.js`
+
+[`frontend/src/lib/guards.js`](../../frontend/src/lib/guards.js) turns those predicates into route wrappers. `<Guard>` composes a **role axis** and a **billing axis** so a route declares each requirement separately:
+
+```jsx
+// Grantee route: wrong role -> that role's home; unpaid -> billing redirect (/home)
+<Guard session={session} requireRole={ROLES.GRANTEE}
+       roleRedirect={granteeRoleRedirect} billingMode="redirect">
+  <Grants session={session} />
+</Guard>
+
+// Admin route: wrong role -> "/"; lapsed admin renders READ-ONLY (no redirect)
+<Guard session={session} requireRole={ROLES.ADMIN}
+       roleRedirect="/" billingMode="readOnly">
+  <AdminDashboard session={session} />
+</Guard>
+```
+
+`billingMode` has three values: `none` (not gated), `redirect` (unpaid → billing redirect), `readOnly` (route renders; a lapsed admin gets `readOnly` injected — no redirect). Thin wrappers `<RequireRole>` and `<RequireSubscription>` expose each axis on its own. `resolveGuard()` is a pure function so the redirect matrix is snapshot-testable without a router.
+
+### 4.3 Read-Only Degrade for Lapsed Admins (#40)
+
+A lapsed tenant **admin** (role `admin`, not exempt/waived, no premium) is **not** locked out or redirected. Instead the admin views render **read-only**:
+
+- The route still renders (admin guards use `billingMode="readOnly"`).
+- A [`ReadOnlyBanner`](../../frontend/src/components/ReadOnlyBanner.js) explains the lapse and links to billing.
+- Every mutation handler calls [`useWriteGuard(session)`](../../frontend/src/lib/useWriteGuard.js) — a stable function returning `true` when the write is allowed, or `false` (after navigating to `/subscription`) when blocked. Mutation controls are disabled and route to `/subscription`.
+
+By contrast, an unpaid **grantee** (no basic membership) is still redirected to `/home` on grantee routes — only admins get the read-only degrade.
+
+### 4.4 Role-Based Route Homes (#41 / D1)
+
+Each role has a home, and routes redirect off-role users to *their own* home rather than a single fallback:
+
+- `/grants*` and `/expenses` are **grantee-only**. An `admin` hitting them is sent to `/admin`; a `super_admin` to `/super/tenants`.
+- `/admin*` is admin-only (read-only when lapsed); off-role users go to `/` (which dispatches each role to its home).
+- `/super/tenants` is super-admin-only.
+
+The `roleRedirect` prop accepts a function `(session) => path` for these multi-target redirects.

@@ -226,3 +226,47 @@ const handleBackdropClick = (e) => {
 };
 ```
 *Reference file:* [AddExpenseModal.js](../../frontend/src/components/AddExpenseModal.js)
+
+---
+
+## 13. Authorization and Billing as Two Separate Axes
+
+Route access is decided along **two orthogonal axes**, never collapsed into one check (issue #41):
+
+1. **Role** (authorization) — who the user is.
+2. **Billing** (subscription) — whether the user's role has the subscription it requires.
+
+All policy logic lives in one place — [`lib/policy.js`](../../frontend/src/lib/policy.js) — as pure predicates (`getRole`, `hasRequiredSubscription`, `needsSubscription`, `canMutate`). Do **not** re-derive "is this user allowed" inline in components or `App.js`; import from `policy.js`.
+
+Routes are wrapped with the declarative `<Guard>` from [`lib/guards.js`](../../frontend/src/lib/guards.js), which composes both axes. Each axis fails to a *semantically distinct* redirect: wrong role → a role redirect (`/login` or the role's home); unpaid → the billing nudge (`/subscription` or `/home`).
+
+```jsx
+<Guard session={session} requireRole={ROLES.ADMIN}
+       roleRedirect="/" billingMode="readOnly">
+  <AdminDashboard session={session} />
+</Guard>
+```
+
+`billingMode` is `none` | `redirect` | `readOnly`. The pure `resolveGuard()` function lets the whole redirect matrix be snapshot-tested without a router. Thin wrappers `<RequireRole>` / `<RequireSubscription>` expose a single axis when that is all a route needs. See [system_architecture.md Section 4](system_architecture.md#4-authorization-vs-billing-two-orthogonal-axes).
+
+*Reference files:* [policy.js](../../frontend/src/lib/policy.js), [guards.js](../../frontend/src/lib/guards.js), [App.js](../../frontend/src/App.js)
+
+---
+
+## 14. Read-Only Degrade for Lapsed Admins (Don't Lock Out — Disable Writes)
+
+When a tenant admin's subscription lapses, the pattern is **degrade to read-only**, not redirect away (issue #40). Admin routes use `billingMode="readOnly"`, so the page still renders and the `<Guard>` injects a `readOnly` prop.
+
+Mutation handlers must consult [`useWriteGuard(session)`](../../frontend/src/lib/useWriteGuard.js) before writing — it returns `true` when allowed, or `false` after navigating the lapsed admin to `/subscription`:
+
+```js
+const guardWrite = useWriteGuard(session);
+async function handleApprove() {
+  if (!guardWrite()) return;   // lapsed admin -> routed to billing nudge
+  await supabase.from('grant_record').update({ status: 'approved' }).eq('id', id);
+}
+```
+
+Render a [`ReadOnlyBanner`](../../frontend/src/components/ReadOnlyBanner.js) at the top of degraded admin views and disable mutation controls. (Grantees without basic membership are still redirected to `/home` — the read-only degrade is admin-only.)
+
+*Reference files:* [useWriteGuard.js](../../frontend/src/lib/useWriteGuard.js), [policy.js](../../frontend/src/lib/policy.js) (`canMutate` / `isReadOnlyAdmin`), [ReadOnlyBanner.js](../../frontend/src/components/ReadOnlyBanner.js)
