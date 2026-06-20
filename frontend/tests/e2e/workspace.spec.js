@@ -25,8 +25,11 @@ test('Flow 3: Workspace Access & Expense Tracking', async ({ page, supabase, tes
   // 3. Inject an active subscription to bypass the subscription wall
   await testData.createSubscription(userRecord.id, 'basic', 'active');
 
-  // Navigate back to home now that we have a subscription
+  // The membership status is loaded once when the app bootstraps the session.
+  // A client-side SPA navigation won't pick up the just-injected subscription,
+  // so force a full reload to re-bootstrap the session with the new membership.
   await page.goto('/home');
+  await page.reload();
   await expect(page).toHaveURL(/.*\/home/);
 
   // 4. Create Grant
