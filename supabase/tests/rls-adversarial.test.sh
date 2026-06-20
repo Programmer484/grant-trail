@@ -54,6 +54,37 @@ ROLLBACK;
 SQL
 }
 
+# psql_anon <sql> — run <sql> as the unauthenticated `anon` role (RLS on),
+# inside a rolled-back transaction. No auth.uid() claim is set.
+psql_anon() {
+  local sql="$1"
+  docker exec -i "$DB_CONTAINER" psql -U postgres -d postgres -tA -v ON_ERROR_STOP=0 <<SQL 2>&1
+BEGIN;
+SELECT set_config('request.jwt.claims',
+  json_build_object('role','anon')::text, true);
+SET LOCAL ROLE anon;
+${sql}
+ROLLBACK;
+SQL
+}
+
+# psql_setup_as <auth_uid> <setup_sql> <assert_sql> — run privileged <setup_sql>
+# as postgres (to plant fixtures storage/RLS can't insert), then run <assert_sql>
+# as the given authenticated user, all in ONE rolled-back transaction so nothing
+# persists. Prints the assert query's result.
+psql_setup_as() {
+  local uid="$1" setup="$2" assert="$3"
+  docker exec -i "$DB_CONTAINER" psql -U postgres -d postgres -tA -v ON_ERROR_STOP=0 <<SQL 2>&1
+BEGIN;
+${setup}
+SELECT set_config('request.jwt.claims',
+  json_build_object('sub','${uid}','role','authenticated')::text, true);
+SET LOCAL ROLE authenticated;
+${assert}
+ROLLBACK;
+SQL
+}
+
 # assert_eq <name> <expected> <actual>
 assert_eq() {
   local name="$1" expected="$2" actual="$3"
@@ -148,6 +179,175 @@ out=$(psql_as "$ADMIN_BRIGHT" "
   WHERE tenant_id=2 AND role='grantee';
   GET DIAGNOSTICS;")
 assert_contains "tenant admin can still manage own-tenant users" "UPDATE" "$out"
+
+# ============================================================================
+# D7 — `invites` token-scoped read (no anon enumeration)
+# ============================================================================
+# Plant two invites in two different tenants, then prove:
+#   * anon CANNOT SELECT the invites table at all (no enumeration),
+#   * anon CAN fetch exactly one invite by a valid token via the RPC,
+#   * a bogus token returns zero rows,
+#   * a valid token returns exactly the one matching row (not the other).
+INV_SETUP="
+INSERT INTO invites (tenant_id, token, role, email)
+VALUES (1, '11111111-1111-1111-1111-111111111111', 'grantee', 'a@tfac.test'),
+       (2, '22222222-2222-2222-2222-222222222222', 'grantee', 'b@bright.test');
+"
+
+# anon cannot enumerate the table (either denied by privilege => error, or 0 rows).
+out=$(docker exec -i "$DB_CONTAINER" psql -U postgres -d postgres -tA -v ON_ERROR_STOP=0 <<SQL 2>&1
+BEGIN;
+${INV_SETUP}
+SELECT set_config('request.jwt.claims', json_build_object('role','anon')::text, true);
+SET LOCAL ROLE anon;
+SELECT count(*) FROM invites;
+ROLLBACK;
+SQL
+)
+# Accept either a permission-denied error or a hard 0 — both mean "no enumeration".
+if [[ "$out" == *"permission denied"* ]]; then
+  assert_contains "anon CANNOT enumerate invites (privilege revoked)" "permission denied" "$out"
+else
+  assert_eq "anon CANNOT enumerate invites (0 rows)" "0" "$(echo "$out" | grep -E '^[0-9]+$' | head -1)"
+fi
+
+# anon CAN fetch exactly one invite by a valid token via the RPC.
+out=$(docker exec -i "$DB_CONTAINER" psql -U postgres -d postgres -tA -v ON_ERROR_STOP=0 <<SQL 2>&1
+BEGIN;
+${INV_SETUP}
+SELECT set_config('request.jwt.claims', json_build_object('role','anon')::text, true);
+SET LOCAL ROLE anon;
+SELECT count(*) FROM get_invite_by_token('11111111-1111-1111-1111-111111111111');
+ROLLBACK;
+SQL
+)
+assert_eq "anon CAN fetch exactly one invite by valid token via RPC" "1" "$(echo "$out" | grep -E '^[0-9]+$' | head -1)"
+
+# The RPC returns the RIGHT invite (tenant 1's email, not tenant 2's).
+out=$(docker exec -i "$DB_CONTAINER" psql -U postgres -d postgres -tA -v ON_ERROR_STOP=0 <<SQL 2>&1
+BEGIN;
+${INV_SETUP}
+SELECT set_config('request.jwt.claims', json_build_object('role','anon')::text, true);
+SET LOCAL ROLE anon;
+SELECT email FROM get_invite_by_token('11111111-1111-1111-1111-111111111111');
+ROLLBACK;
+SQL
+)
+assert_contains "RPC returns the matching invite's fields (tenant 1)" "a@tfac.test" "$out"
+
+# A bogus token yields zero rows (no leak).
+out=$(docker exec -i "$DB_CONTAINER" psql -U postgres -d postgres -tA -v ON_ERROR_STOP=0 <<SQL 2>&1
+BEGIN;
+${INV_SETUP}
+SELECT set_config('request.jwt.claims', json_build_object('role','anon')::text, true);
+SET LOCAL ROLE anon;
+SELECT count(*) FROM get_invite_by_token('99999999-9999-9999-9999-999999999999');
+ROLLBACK;
+SQL
+)
+assert_eq "anon gets zero rows for an unknown token" "0" "$(echo "$out" | grep -E '^[0-9]+$' | head -1)"
+
+# ============================================================================
+# D5 — storage objects are tenant-scoped
+# ============================================================================
+# Plant objects under both buckets using the real path convention:
+#   grant-documents : attachments/<tenant_id>/<grant_id>/<file>
+#   receipts        : receipts/<tenant_id>/<grant_id>/<expense_id>/<file>
+# Tenant 1's object and tenant 2's object, then check cross-tenant isolation.
+STORAGE_SETUP="
+INSERT INTO storage.objects (bucket_id, name, owner)
+VALUES ('grant-documents', 'attachments/1/10/secret-t1.pdf', NULL),
+       ('grant-documents', 'attachments/2/20/secret-t2.pdf', NULL),
+       ('receipts',        'receipts/1/10/100/r-t1.png',     NULL),
+       ('receipts',        'receipts/2/20/200/r-t2.png',     NULL);
+"
+
+# Tenant-A (tfac, tenant 1) grantee can READ tenant 1's object…
+out=$(psql_setup_as "$GRANTEE_TFAC" "$STORAGE_SETUP" \
+  "SELECT count(*) FROM storage.objects WHERE name='attachments/1/10/secret-t1.pdf';")
+assert_eq "tenant-A grantee CAN read own-tenant grant document" "1" "$(echo "$out" | grep -E '^[0-9]+$' | tail -1)"
+
+# …but CANNOT read tenant 2's object.
+out=$(psql_setup_as "$GRANTEE_TFAC" "$STORAGE_SETUP" \
+  "SELECT count(*) FROM storage.objects WHERE name='attachments/2/20/secret-t2.pdf';")
+assert_eq "tenant-A grantee CANNOT read tenant-B grant document" "0" "$(echo "$out" | grep -E '^[0-9]+$' | tail -1)"
+
+# Tenant-A grantee CANNOT delete tenant 2's object, CAN delete own-tenant object.
+# storage.objects has a BEFORE-DELETE protect trigger that hard-aborts ANY direct
+# SQL DELETE (even 0-row) — the real client deletes via the Storage API — so we
+# cannot observe rowcounts. Instead we evaluate, as the authenticated grantee,
+# the EXACT predicate the DELETE policy USES (tenant segment of the path ==
+# caller's tenant). True => the policy authorizes the delete; false => denied.
+out=$(psql_as "$GRANTEE_TFAC" "
+  SELECT public.storage_object_tenant_id('attachments/2/20/secret-t2.pdf') = public.current_tenant_id();")
+assert_eq "tenant-A grantee CANNOT delete tenant-B grant document (policy denies)" "f" "$(echo "$out" | grep -E '^[tf]$' | head -1)"
+
+out=$(psql_as "$GRANTEE_TFAC" "
+  SELECT public.storage_object_tenant_id('attachments/1/10/secret-t1.pdf') = public.current_tenant_id();")
+assert_eq "tenant-A grantee CAN delete own-tenant grant document (policy allows)" "t" "$(echo "$out" | grep -E '^[tf]$' | head -1)"
+
+# Same isolation for receipts: tenant-A cannot read tenant-B's receipt.
+out=$(psql_setup_as "$GRANTEE_TFAC" "$STORAGE_SETUP" \
+  "SELECT count(*) FROM storage.objects WHERE name='receipts/2/20/200/r-t2.png';")
+assert_eq "tenant-A grantee CANNOT read tenant-B receipt" "0" "$(echo "$out" | grep -E '^[0-9]+$' | tail -1)"
+
+out=$(psql_setup_as "$GRANTEE_TFAC" "$STORAGE_SETUP" \
+  "SELECT count(*) FROM storage.objects WHERE name='receipts/1/10/100/r-t1.png';")
+assert_eq "tenant-A grantee CAN read own-tenant receipt" "1" "$(echo "$out" | grep -E '^[0-9]+$' | tail -1)"
+
+# Tenant-A grantee CANNOT plant a file into tenant 2's path: the INSERT violates
+# the WITH CHECK on the upload policy and raises an RLS error.
+out=$(psql_setup_as "$GRANTEE_TFAC" "" "
+  INSERT INTO storage.objects (bucket_id, name) VALUES ('grant-documents','attachments/2/20/poison.pdf');")
+assert_contains "tenant-A grantee CANNOT upload into tenant-B path" "violates row-level security policy" "$out"
+
+# …but CAN upload into their own tenant's path.
+out=$(psql_setup_as "$GRANTEE_TFAC" "" "
+  INSERT INTO storage.objects (bucket_id, name) VALUES ('grant-documents','attachments/1/10/ok.pdf');
+  SELECT count(*) FROM storage.objects WHERE name='attachments/1/10/ok.pdf';")
+assert_eq "tenant-A grantee CAN upload into own-tenant path" "1" "$(echo "$out" | grep -E '^[0-9]+$' | tail -1)"
+
+# super_admin (tenant-agnostic) CAN read across tenants.
+out=$(psql_setup_as "$SUPER_TFAC" "$STORAGE_SETUP" \
+  "SELECT count(*) FROM storage.objects WHERE name='attachments/2/20/secret-t2.pdf';")
+assert_eq "super_admin CAN read another tenant's grant document" "1" "$(echo "$out" | grep -E '^[0-9]+$' | tail -1)"
+
+# ============================================================================
+# D4 — super_admin READ-ONLY ops access (billing/membership/notifications/etc.)
+# ============================================================================
+# The seed already provides billing_customers / subscriptions / user_memberships
+# rows for tenant-1 grantees. Prove super_admin (tenant 1) can now SELECT them,
+# and notifications + grant_comments too.
+
+NOTIF_COMMENT_SETUP="
+INSERT INTO notifications (user_id, tenant_id, type, title, message)
+VALUES ((SELECT id FROM users WHERE user_id='${GRANTEE_TFAC}'), 1, 'info', 'T', 'M');
+INSERT INTO grant_comments (grant_id, tenant_id, user_id, comment)
+SELECT gr.id, 1, '${GRANTEE_TFAC}'::uuid, 'hello'
+FROM grant_record gr WHERE gr.tenant_id=1 LIMIT 1;
+"
+
+out=$(psql_as "$SUPER_TFAC" "SELECT count(*) > 0 FROM subscriptions;")
+assert_eq "super_admin CAN read subscriptions" "t" "$(echo "$out" | grep -E '^[tf]$' | head -1)"
+
+out=$(psql_as "$SUPER_TFAC" "SELECT count(*) > 0 FROM user_memberships;")
+assert_eq "super_admin CAN read user_memberships" "t" "$(echo "$out" | grep -E '^[tf]$' | head -1)"
+
+out=$(psql_as "$SUPER_TFAC" "SELECT count(*) > 0 FROM billing_customers;")
+assert_eq "super_admin CAN read billing_customers" "t" "$(echo "$out" | grep -E '^[tf]$' | head -1)"
+
+out=$(psql_setup_as "$SUPER_TFAC" "$NOTIF_COMMENT_SETUP" \
+  "SELECT count(*) FROM notifications WHERE title='T';")
+assert_eq "super_admin CAN read notifications" "1" "$(echo "$out" | grep -E '^[0-9]+$' | tail -1)"
+
+out=$(psql_setup_as "$SUPER_TFAC" "$NOTIF_COMMENT_SETUP" \
+  "SELECT count(*) FROM grant_comments WHERE comment='hello';")
+assert_eq "super_admin CAN read grant_comments" "1" "$(echo "$out" | grep -E '^[0-9]+$' | tail -1)"
+
+# Negative: super_admin write to subscriptions must still be blocked (read-only).
+out=$(psql_as "$SUPER_TFAC" "
+  UPDATE subscriptions SET status='canceled' WHERE true; GET DIAGNOSTICS;")
+assert_contains "super_admin CANNOT write subscriptions (read-only)" "UPDATE 0" "$out"
 
 echo "=============================================================="
 echo " RESULTS: ${pass} passed, ${fail} failed"

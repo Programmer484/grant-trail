@@ -199,6 +199,13 @@ manage tenants/users. If a super_admin is ever expected to inspect a tenant's
 memberships/billing/notifications directly, these policies would block it.
 Confirm intended.
 
+> **RESOLVED (`20260619160000_super_admin_readonly_ops.sql`).** super_admin now
+> has READ-ONLY (SELECT) access to `subscriptions`, `user_memberships`,
+> `billing_customers`, `notifications`, and `grant_comments` via new additive
+> policies `USING (is_super_admin())`. Writes are intentionally NOT granted —
+> they stay on the service_role/Stripe path. (`feature_entitlements` was left
+> out of scope.) Proven by `supabase/tests/rls-adversarial.test.sh`.
+
 **D5 — Storage object policies are role/tenant-blind.** Upload, delete, and
 own-read on both buckets check only `auth.uid() IS NOT NULL`
 (`...initial_schema.sql:3447-3467`) — any authenticated user of any tenant can
@@ -206,6 +213,18 @@ upload to or delete from `grant-documents` / `receipts`, with no ownership or
 tenant scoping in the storage layer (the `grant_attachments`/`receipts` *table*
 rows are scoped, but the underlying objects are not). Confirm the object-path
 naming convention is relied on for isolation, or tighten these policies.
+
+> **RESOLVED (`20260619150000_storage_tenant_scoping.sql`).** The object-path
+> convention IS the isolation key and the storage policies now enforce it. Paths
+> are `grant-documents: attachments/<tenant_id>/<grant_id>/<file>`
+> (`GrantAttachments.js`) and
+> `receipts: receipts/<tenant_id>/<grant_id>/<expense_id>/<file>`
+> (`AddExpenseModal.js`) — the 2nd path segment is the owning tenant. A helper
+> `storage_object_tenant_id(name)` extracts it (`storage.foldername(name)[2]`),
+> and read/insert/delete on both buckets now require
+> `storage_object_tenant_id(name) = current_tenant_id()`. super_admin keeps
+> tenant-agnostic READ via `is_super_admin()`. Proven by
+> `supabase/tests/rls-adversarial.test.sh`.
 
 **D6 — `audit_log` exposes other users' actions on shared records to a
 grantee.** "Users can view audit logs for their own records" is keyed on
@@ -219,3 +238,15 @@ under this policy — flagged so the intended semantics are confirmed).
 to `anon` — so any unauthenticated caller can enumerate all invite rows
 (tokens, emails). Token-based signup may require public read, but full-table
 read (not scoped to a supplied token) is broad. Confirm.
+
+> **RESOLVED (`20260619140000_invites_token_scoped_read.sql`).** The
+> `USING (true)` policy is dropped and the `anon` table privilege is revoked, so
+> anon can no longer enumerate `invites` (direct read now returns
+> `permission denied`). A token-scoped SECURITY DEFINER RPC
+> `get_invite_by_token(p_token text)` returns ONLY the single matching invite's
+> needed fields (`id, tenant_id, role, email, used_at, expires_at, tenant_name`)
+> and is `EXECUTE`-granted to `anon`/`authenticated`. The admin own-tenant SELECT
+> policy is left intact. Frontend invite-acceptance (`SignUpClean.js`,
+> `CompleteProfile.js`) now calls the RPC via the `lib/invites.js` helper instead
+> of `supabase.from('invites').select(...)`. Proven by
+> `supabase/tests/rls-adversarial.test.sh`.
