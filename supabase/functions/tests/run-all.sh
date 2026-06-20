@@ -79,6 +79,9 @@ run() {
 # (b) checkout sessions -- no webhook needed
 run checkout-sessions.test.sh
 
+# authz / identity guards -- needs the Stripe key, no webhook
+run authz-identity.test.sh
+
 # (a,d) webhook matrix -- needs the live forwarder
 start_forwarder
 run webhook-matrix.test.sh
