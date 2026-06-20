@@ -4,6 +4,7 @@
 // the user is redirected to /complete-profile to fill in their details.
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
+import { getInviteByToken } from '../lib/invites';
 import { Link, useSearchParams } from 'react-router-dom';
 import { FaEnvelope, FaLock, FaCheckCircle } from 'react-icons/fa';
 import '../styles/Login.css';
@@ -29,11 +30,7 @@ function SignUp() {
     if (!inviteToken) return;
 
     async function validateInvite() {
-      const { data, error } = await supabase
-        .from('invites')
-        .select('*, tenants(name)')
-        .eq('token', inviteToken)
-        .single();
+      const { data, error } = await getInviteByToken(inviteToken);
 
       if (error || !data) {
         setInviteError('Invalid invite link.');
