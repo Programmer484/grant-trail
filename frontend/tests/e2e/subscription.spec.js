@@ -29,7 +29,7 @@ test('Flow 2: Subscription & Stripe Mocking', async ({ page, testData }) => {
   // 4. Mock the Stripe Checkout Edge Function
   await page.route('**/functions/v1/*', async (route) => {
     const url = route.request().url();
-    if (url.includes('create-checkout-session') || url.includes('billing')) {
+    if (url.includes('checkout-session') || url.includes('billing')) {
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -85,6 +85,12 @@ test('Read-only lapse: lapsed admin can view admin routes but cannot mutate', as
   await page.fill('#password', adminPassword);
   await page.locator('button[type="submit"]').click();
 
+  // Wait for the session to be established before navigating away. Login
+  // redirects an admin to /admin once the async session bootstrap completes;
+  // navigating before that would race the guard (which sees no session yet and
+  // redirects to the public landing page).
+  await page.waitForURL(/.*\/admin$/, { timeout: 10000 });
+
   // 3. The admin can VIEW an admin route (read-only) — it renders rather than
   //    redirecting away, and shows the read-only banner.
   await page.goto('/admin/settings');
@@ -99,7 +105,10 @@ test('Read-only lapse: lapsed admin can view admin routes but cannot mutate', as
   // 5. Reactivating a premium subscription restores write access: the banner is
   //    gone and the settings form becomes editable.
   await testData.createSubscription(adminUser.id, 'premium', 'active');
+  // Membership is loaded at session bootstrap; reload so the app re-fetches it
+  // and the read-only degrade lifts.
   await page.goto('/admin/settings');
+  await page.reload();
   await expect(page.getByRole('status')).toHaveCount(0);
   // With changes the Save button is enabled once the admin can write.
   await page.getByPlaceholder('support@yourorg.com').fill(`support+${ts}@example.com`);

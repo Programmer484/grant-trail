@@ -109,11 +109,25 @@ const test = base.test.extend({
       },
 
       createSubscription: async (userId, tier = 'premium', status = 'active') => {
+        // The DB enforces that a subscription's product ID matches the configured
+        // platform_settings product ID for its tier (enforce_subscription_tier_product_match).
+        // Read the live IDs rather than hard-coding them so the fixture stays
+        // correct regardless of which seed the shared stack is running.
+        const { data: settings, error: settingsError } = await supabase
+          .from('platform_settings')
+          .select('basic_membership_product_id, premium_membership_product_id')
+          .eq('id', 1)
+          .single();
+        if (settingsError) throw settingsError;
+        const productId = tier === 'premium'
+          ? settings.premium_membership_product_id
+          : settings.basic_membership_product_id;
+
         const { data, error } = await supabase.from('subscriptions').insert({
           user_id: userId,
           stripe_customer_id: `cus_${Date.now()}`,
           stripe_subscription_id: `sub_${Date.now()}`,
-          stripe_product_id: tier === 'premium' ? 'prod_UDClBMtvFLKyNW' : 'prod_UKEACUGjIeg3MU',
+          stripe_product_id: productId,
           stripe_price_id: `price_${Date.now()}`,
           membership_tier: tier,
           status,
