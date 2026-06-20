@@ -71,7 +71,7 @@ session.tenantConfig.type              // Tenant type: 'managed' or 'self_servic
 session.tenantConfig.name              // Tenant display name
 session.membership.hasBasicAccess      // Boolean: true if user has an active Basic+ subscription
 session.membership.hasPremiumAccess    // Boolean: true if user has active Premium subscription
-session.membership.isExempt            // Boolean: true for super_admins (bypass billing requirements)
+session.membership.isExempt            // Boolean: bypass billing (super_admins, platform-root admins, or tenants with require_subscription = false)
 ```
 
 ---
@@ -81,3 +81,23 @@ For local development, Supabase Auth accounts are seeded deterministically. Duri
 1. `supabase/seed.sql` populates the Auth schema and the application `users` table.
 2. The user UUIDs are matched automatically so test credentials (such as `maria.smith@example.com` / `password123`) work out-of-the-box.
 3. If you manually create a user in the local Supabase dashboard, you must run an SQL update to copy their Auth UUID into `users.user_id`. See the [Resetting Test Data Guide](../how_to/reset_test_data.md) for sql examples.
+
+---
+
+## 5. Invite-Based Signup (Managed Tenants)
+
+A user invited to a managed tenant signs up via `/signup?invite=<token>`. The `invites` table is **no longer readable or writable by `anon` or the just-authenticated user** (D7 security fix — it was previously world-readable, allowing enumeration of every token + email). Both the read and the write go through token-scoped `SECURITY DEFINER` RPCs instead.
+
+Frontend helpers live in [`lib/invites.js`](../../frontend/src/lib/invites.js); the flow spans [`SignUpClean.js`](../../frontend/src/components/SignUpClean.js) and [`CompleteProfile.js`](../../frontend/src/components/CompleteProfile.js):
+
+1. **Read** — `getInviteByToken(token)` calls the `get_invite_by_token(token)` RPC, which returns **only** the single matching invite's fields (tenant_id, role, email, used_at, expires_at, tenant name). No enumeration is possible. `SignUpClean.js` uses this to validate the token and show "invited as `<role>`"; `CompleteProfile.js` uses it to know which tenant/role to create the user in.
+2. **Sign up + complete profile** — after Supabase Auth creates the account, `CompleteProfile.js` inserts the `users` row with `tenant_id` and `role` taken from the invite.
+3. **Consume** — `consumeInvite(token, userId)` calls the `consume_invite(token, user_id)` RPC, which stamps `used_by` / `used_at` for the single invite matching the token. It is token-scoped, idempotent (only consumes an invite where `used_at IS NULL`), and enforces `p_user_id = auth.uid()` so a caller cannot consume an invite on another user's behalf. A prior direct-table update silently failed post-D7 (a freshly-authenticated grantee has no SELECT policy on the invite), which this RPC fixes.
+
+Self-service signup (no token) takes the open-signup path and auto-provisions a tenant — see [system_architecture.md Section 3.2](system_architecture.md#32-two-completely-different-signup-flows).
+
+---
+
+## 6. Authorization vs Billing Axes
+
+Route access combines two independent decisions — **role** (who you are) and **billing** (whether your role's subscription is satisfied) — centralized in [`lib/policy.js`](../../frontend/src/lib/policy.js) and enforced declaratively by `<Guard>` in [`lib/guards.js`](../../frontend/src/lib/guards.js). A lapsed admin keeps **read-only** access to admin views rather than being locked out; mutations are gated by [`useWriteGuard`](../../frontend/src/lib/useWriteGuard.js). This is documented fully in [system_architecture.md Section 4](system_architecture.md#4-authorization-vs-billing-two-orthogonal-axes); the `session.membership.*` flags it consumes are listed in [Section 3](#3-how-to-consume-the-session) above.
