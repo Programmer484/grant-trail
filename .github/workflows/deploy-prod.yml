@@ -1,0 +1,53 @@
+name: Deploy to Production
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v2
+        with:
+          version: latest
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push secrets to prod
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase secrets set \
+            STRIPE_SECRET_KEY="${{ secrets.STRIPE_SECRET_KEY }}" \
+            STRIPE_WEBHOOK_SECRET="${{ secrets.STRIPE_WEBHOOK_SECRET }}" \
+            STRIPE_PRICE_BASIC="${{ vars.STRIPE_PRICE_BASIC }}" \
+            STRIPE_PRICE_PRO="${{ vars.STRIPE_PRICE_PRO }}" \
+            STRIPE_BILLING_PORTAL_CONFIGURATION_ID="${{ vars.STRIPE_BILLING_PORTAL_CONFIGURATION_ID }}" \
+            APP_URL="${{ vars.APP_URL }}" \
+            --project-ref "${{ vars.SUPABASE_PROD_PROJECT_REF }}"
+
+      - name: Apply database migrations
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase db push \
+            --project-ref "${{ vars.SUPABASE_PROD_PROJECT_REF }}"
+
+      - name: Deploy edge functions
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          for fn in \
+            create-checkout-session \
+            create-basic-membership-checkout-session \
+            create-billing-portal-session \
+            stripe-webhook \
+            sync-my-subscription; do
+            supabase functions deploy "$fn" \
+              --project-ref "${{ vars.SUPABASE_PROD_PROJECT_REF }}"
+          done

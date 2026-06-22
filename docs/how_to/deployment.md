@@ -291,7 +291,7 @@ secrets (never production keys):
 
 - `STRIPE_SECRET_KEY_TEST`
 - `STRIPE_PRICE_BASIC_TEST`
-- `STRIPE_PRICE_FISCAL_AGENT_ACCESS_TEST`
+- `STRIPE_PRICE_PRO_TEST`
 
 `STRIPE_WEBHOOK_SECRET` is **not** stored — it is derived at runtime from the live
 forwarder. See [Local Stripe / Billing Testing](local_stripe_testing.md) for the
@@ -322,7 +322,7 @@ automatically by the platform. The secrets **you** must provide:
 | `STRIPE_PRICE_BASIC` | checkout / sync | Yes |
 | `STRIPE_PRICE_PRO` | checkout / sync | Yes |
 | `APP_URL` | checkout / portal redirects | Yes |
-| `STRIPE_PRICE_FISCAL_AGENT_ACCESS` | basic-membership checkout | Only if that plan is used |
+| `STRIPE_PRICE_PRO` | basic-membership checkout | Only if that plan is used |
 | `STRIPE_BILLING_PORTAL_CONFIGURATION_ID` | billing portal | Optional (Stripe default if unset) |
 
 ### Preflight check (run after any deploy that touches functions or secrets)
