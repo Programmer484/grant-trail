@@ -1,0 +1,14 @@
+name: Deploy to Staging
+
+# Auto-deploy to staging on every push to main. Delegates the full deploy
+# pipeline to the reusable deploy.yml, targeting the `staging` environment.
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: staging
+    secrets: inherit
