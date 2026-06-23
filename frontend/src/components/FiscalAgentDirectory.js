@@ -24,6 +24,9 @@ import {
   FaChevronRight,
   FaShieldAlt,
   FaUsers,
+  FaPen,
+  FaPlus,
+  FaTrashAlt,
 } from 'react-icons/fa';
 import SponsorshipApplicationModal from './SponsorshipApplicationModal';
 import FiscalAgentInbox from './FiscalAgentInbox';
@@ -743,6 +746,320 @@ function ListingFormModal({ onClose, onPublished }) {
 }
 
 /* ------------------------------------------------------------------ */
+/* Listing editor — the charity owner edits their public listing       */
+/* ------------------------------------------------------------------ */
+
+const RESPONSE_TIMES = [
+  'Same day',
+  '~1 business day',
+  '~2 business days',
+  '~3 business days',
+];
+
+// Weight the fields seekers actually look at, so the meter nudges owners
+// toward a useful profile rather than a merely non-empty one.
+function listingCompleteness(l) {
+  const checks = [
+    !!l.name,
+    !!l.location,
+    !!l.blurb,
+    !!l.about,
+    l.focus && l.focus.length > 0,
+    l.services && l.services.length > 0,
+    !!l.website,
+    !!l.email,
+    !!l.phone,
+    !!l.feeNum,
+  ];
+  const done = checks.filter(Boolean).length;
+  return Math.round((done / checks.length) * 100);
+}
+
+function ListingEditorModal({ listing, onClose, onSave }) {
+  // Edit a working copy so Cancel discards cleanly.
+  const [data, setData] = useState(() => ({
+    ...listing,
+    focus: [...(listing.focus || [])],
+    services: [...(listing.services || [])],
+  }));
+  const [saving, setSaving] = useState(false);
+
+  function set(key, value) {
+    setData((d) => ({ ...d, [key]: value }));
+  }
+
+  function toggleFocus(f) {
+    setData((d) => ({
+      ...d,
+      focus: d.focus.includes(f) ? d.focus.filter((x) => x !== f) : [...d.focus, f],
+    }));
+  }
+
+  function updateService(i, value) {
+    setData((d) => {
+      const services = [...d.services];
+      services[i] = value;
+      return { ...d, services };
+    });
+  }
+
+  function addService() {
+    setData((d) => ({ ...d, services: [...d.services, ''] }));
+  }
+
+  function removeService(i) {
+    setData((d) => ({ ...d, services: d.services.filter((_, idx) => idx !== i) }));
+  }
+
+  const valid =
+    data.name.trim() && data.location.trim() && data.blurb.trim() && data.focus.length > 0;
+
+  function save() {
+    if (!valid) return;
+    setSaving(true);
+    // Simulate a save round-trip, mirroring the other mock flows.
+    setTimeout(() => {
+      setSaving(false);
+      onSave({
+        ...data,
+        name: data.name.trim(),
+        location: data.location.trim(),
+        feeNum: Number(data.feeNum) || 0,
+        services: data.services.map((s) => s.trim()).filter(Boolean),
+      });
+    }, 700);
+  }
+
+  return (
+    <Modal onClose={onClose} labelledBy="fad-editor-title" wide>
+      <h2 id="fad-editor-title" className="fad-modal-title">
+        Edit your listing
+      </h2>
+      <p className="fad-modal-sub">
+        Changes appear on your public profile and directory card right away.
+      </p>
+
+      <div className="fad-form">
+        <h4 className="fad-editor-section">Basics</h4>
+        <Field label="Organization name" required>
+          <input type="text" value={data.name} onChange={(e) => set('name', e.target.value)} />
+        </Field>
+        <Field label="Location" required>
+          <input
+            type="text"
+            value={data.location}
+            onChange={(e) => set('location', e.target.value)}
+            placeholder="City, State"
+          />
+        </Field>
+        <Field label="Short description" required>
+          <textarea
+            rows={2}
+            value={data.blurb}
+            onChange={(e) => set('blurb', e.target.value)}
+            placeholder="One or two sentences organizations see on your card…"
+          />
+        </Field>
+        <Field label="About">
+          <textarea
+            rows={4}
+            value={data.about || ''}
+            onChange={(e) => set('about', e.target.value)}
+            placeholder="Full description shown on your profile…"
+          />
+        </Field>
+
+        <h4 className="fad-editor-section">Focus areas</h4>
+        <Field label="Focus areas" required>
+          <div className="fad-focuspick">
+            {FOCUS_AREAS.map((f) => (
+              <button
+                key={f}
+                type="button"
+                className={`fad-chip ${data.focus.includes(f) ? 'is-active' : ''}`}
+                onClick={() => toggleFocus(f)}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
+        </Field>
+
+        <h4 className="fad-editor-section">Sponsorship terms</h4>
+        <div className="fad-editor-grid">
+          <Field label="Admin fee (%)">
+            <input
+              type="number"
+              min="0"
+              step="0.5"
+              value={data.feeNum}
+              onChange={(e) => set('feeNum', e.target.value)}
+            />
+          </Field>
+          <Field label="Typical response">
+            <select value={data.responseTime} onChange={(e) => set('responseTime', e.target.value)}>
+              {RESPONSE_TIMES.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
+        <button
+          type="button"
+          className={`fad-toggle ${data.accepting ? 'is-active' : ''}`}
+          aria-pressed={data.accepting}
+          onClick={() => set('accepting', !data.accepting)}
+        >
+          <FaCheck /> {data.accepting ? 'Accepting projects' : 'Waitlist only'}
+        </button>
+
+        <h4 className="fad-editor-section">Services</h4>
+        <div className="fad-svc-list">
+          {data.services.map((s, i) => (
+            <div className="fad-svc-row" key={i}>
+              <input
+                type="text"
+                value={s}
+                onChange={(e) => updateService(i, e.target.value)}
+                placeholder="e.g. Monthly financial reporting"
+              />
+              <button
+                type="button"
+                className="fad-svc-remove"
+                onClick={() => removeService(i)}
+                aria-label="Remove service"
+              >
+                <FaTrashAlt />
+              </button>
+            </div>
+          ))}
+          <button type="button" className="fad-btn fad-btn-ghost fad-svc-add" onClick={addService}>
+            <FaPlus /> Add service
+          </button>
+        </div>
+
+        <h4 className="fad-editor-section">Contact</h4>
+        <div className="fad-editor-grid">
+          <Field label="Website">
+            <input
+              type="text"
+              value={data.website || ''}
+              onChange={(e) => set('website', e.target.value)}
+              placeholder="yourorg.org"
+            />
+          </Field>
+          <Field label="Email">
+            <input type="email" value={data.email || ''} onChange={(e) => set('email', e.target.value)} />
+          </Field>
+          <Field label="Phone">
+            <input type="text" value={data.phone || ''} onChange={(e) => set('phone', e.target.value)} />
+          </Field>
+        </div>
+      </div>
+
+      <div className="fad-form-foot">
+        <button type="button" className="fad-btn fad-btn-ghost" onClick={onClose}>
+          Cancel
+        </button>
+        <button
+          type="button"
+          className="fad-btn fad-btn-primary"
+          disabled={!valid || saving}
+          onClick={save}
+        >
+          {saving ? 'Saving…' : 'Save changes'}
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+function OwnerListingPanel({ listing, completeness, onEdit, onToggleAccepting }) {
+  return (
+    <section className="fad-owner-panel">
+      <div className="fad-owner-panel-head">
+        <h2>Your listing</h2>
+        <span className="fad-badge fad-badge-ok">
+          <FaCheckCircle /> Live
+        </span>
+        <button type="button" className="fad-btn fad-btn-primary fad-owner-edit" onClick={onEdit}>
+          <FaPen /> Edit listing
+        </button>
+      </div>
+
+      <div className="fad-owner-panel-body">
+        <div className="fad-listing-preview">
+          <span className="fad-preview-tag">Public preview</span>
+          <div className="fad-card-head">
+            <div className="fad-avatar" aria-hidden="true">
+              {listing.name.charAt(0)}
+            </div>
+            <div className="fad-card-title">
+              <h3>
+                {listing.name}
+                {listing.verified && (
+                  <span className="fad-verified" title="Verified Fiscal Agent">
+                    <FaCheckCircle />
+                  </span>
+                )}
+              </h3>
+              <p className="fad-location">
+                <FaMapMarkerAlt /> {listing.location}
+              </p>
+            </div>
+            <Stars rating={listing.rating} />
+          </div>
+          <p className="fad-blurb">{listing.blurb}</p>
+          <ul className="fad-tags">
+            {listing.focus.map((f) => (
+              <li key={f}>{f}</li>
+            ))}
+          </ul>
+          <div className="fad-card-meta">
+            {listing.accepting ? (
+              <span className="fad-badge fad-badge-ok">
+                <FaCheck /> Accepting projects
+              </span>
+            ) : (
+              <span className="fad-badge fad-badge-muted">Waitlist only</span>
+            )}
+            <span className="fad-meta-time">
+              <FaRegClock /> {listing.responseTime}
+            </span>
+          </div>
+        </div>
+
+        <aside className="fad-owner-side">
+          <div className="fad-completeness">
+            <div className="fad-completeness-top">
+              <span>Profile completeness</span>
+              <strong>{completeness}%</strong>
+            </div>
+            <div className="fad-completeness-bar">
+              <span style={{ width: `${completeness}%` }} />
+            </div>
+            {completeness < 100 && (
+              <p className="fad-hint">A complete profile ranks higher with seekers.</p>
+            )}
+          </div>
+
+          <button
+            type="button"
+            className={`fad-toggle ${listing.accepting ? 'is-active' : ''}`}
+            aria-pressed={listing.accepting}
+            onClick={onToggleAccepting}
+          >
+            <FaCheck /> {listing.accepting ? 'Accepting projects' : 'Waitlist only'}
+          </button>
+        </aside>
+      </div>
+    </section>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /* Toast                                                               */
 /* ------------------------------------------------------------------ */
 
@@ -782,13 +1099,27 @@ export default function FiscalAgentDirectory() {
   const [profileAgent, setProfileAgent] = useState(null);
   const [applyAgent, setApplyAgent] = useState(null);
   const [showListing, setShowListing] = useState(false);
-  const [myListing, setMyListing] = useState(null);
+  const [editingListing, setEditingListing] = useState(false);
   const [toast, setToast] = useState(null);
+
+  // The owner's own editable listing. Seeded from the demo owner agent so the
+  // 'charity' perspective has something live to manage; edits flow back to the
+  // public directory + profile via the overlay below.
+  const [ownerListing, setOwnerListing] = useState(
+    () => AGENTS.find((a) => a.id === OWNER_AGENT_ID) || AGENTS[0],
+  );
 
   // In-memory inquiry store — the apply -> inbox loop lives entirely here.
   const [inquiries, setInquiries] = useState(SAMPLE_INQUIRIES);
 
   const isSubscribed = viewAs !== 'locked';
+
+  // Public listings with the owner's unsaved edits overlaid, so the directory
+  // grid and profile modal reflect what the owner just changed.
+  const effectiveAgents = useMemo(
+    () => AGENTS.map((a) => (a.id === OWNER_AGENT_ID ? ownerListing : a)),
+    [ownerListing],
+  );
 
   const regions = useMemo(() => ['All', ...Array.from(new Set(AGENTS.map((a) => a.region)))], []);
 
@@ -798,7 +1129,7 @@ export default function FiscalAgentDirectory() {
   }, [query, activeFocus, region, acceptingOnly, sort]);
 
   const filtered = useMemo(() => {
-    const list = AGENTS.filter((a) => {
+    const list = effectiveAgents.filter((a) => {
       const matchesQuery =
         !query ||
         a.name.toLowerCase().includes(query.toLowerCase()) ||
@@ -816,7 +1147,7 @@ export default function FiscalAgentDirectory() {
       return a.name.localeCompare(b.name);
     });
     return sorted;
-  }, [query, activeFocus, region, acceptingOnly, sort]);
+  }, [effectiveAgents, query, activeFocus, region, acceptingOnly, sort]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const visible = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -867,10 +1198,31 @@ export default function FiscalAgentDirectory() {
 
   function handlePublished(data) {
     setShowListing(false);
-    setMyListing(data);
+    // Fold the just-published basics into the owner's editable listing so the
+    // editor and public overlay reflect the new org rather than the demo seed.
+    setOwnerListing((prev) => ({
+      ...prev,
+      name: data.name || prev.name,
+      location: data.location || prev.location,
+      blurb: data.blurb || prev.blurb,
+      focus: data.focus && data.focus.length ? data.focus : prev.focus,
+      feeNum: data.fee ? Number(String(data.fee).replace(/[^0-9.]/g, '')) || prev.feeNum : prev.feeNum,
+    }));
     setViewAs('charity');
     setToast({ msg: 'Your listing is live 🎉' });
   }
+
+  function handleSaveListing(updated) {
+    setOwnerListing(updated);
+    setEditingListing(false);
+    setToast({ msg: 'Listing updated' });
+  }
+
+  function toggleAccepting() {
+    setOwnerListing((prev) => ({ ...prev, accepting: !prev.accepting }));
+  }
+
+  const ownerCompleteness = useMemo(() => listingCompleteness(ownerListing), [ownerListing]);
 
   function clearFilters() {
     setQuery('');
@@ -941,17 +1293,27 @@ export default function FiscalAgentDirectory() {
       {viewAs === 'charity' && (
         <section className="fad-owner-banner">
           <div>
-            <strong>{myListing ? myListing.name : 'Your listing'} is live.</strong> Your Fiscal
-            Agent subscription keeps you visible to organizations seeking sponsorship.
+            <strong>{ownerListing.name} is live.</strong> Your Fiscal Agent subscription keeps you
+            visible to organizations seeking sponsorship.
           </div>
           <button
             type="button"
             className="fad-btn fad-btn-primary"
-            onClick={() => setToast({ msg: 'Listing editor would open here' })}
+            onClick={() => setEditingListing(true)}
           >
-            Edit your listing
+            <FaPen /> Edit your listing
           </button>
         </section>
+      )}
+
+      {/* Listing owner management — preview, completeness, quick toggles */}
+      {viewAs === 'charity' && (
+        <OwnerListingPanel
+          listing={ownerListing}
+          completeness={ownerCompleteness}
+          onEdit={() => setEditingListing(true)}
+          onToggleAccepting={toggleAccepting}
+        />
       )}
 
       {/* Listing owner inbox — receives structured sponsorship applications */}
@@ -1200,6 +1562,13 @@ export default function FiscalAgentDirectory() {
       )}
       {showListing && (
         <ListingFormModal onClose={() => setShowListing(false)} onPublished={handlePublished} />
+      )}
+      {editingListing && (
+        <ListingEditorModal
+          listing={ownerListing}
+          onClose={() => setEditingListing(false)}
+          onSave={handleSaveListing}
+        />
       )}
 
       <Toast toast={toast} onDone={() => setToast(null)} />
