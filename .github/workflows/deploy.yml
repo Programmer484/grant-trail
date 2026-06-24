@@ -1,0 +1,100 @@
+name: Deploy (reusable)
+
+# Reusable deploy workflow. Single source of truth for the full deploy
+# pipeline (Supabase secrets/link/migrations/edge-functions + Vercel
+# pull/build/deploy). Callers select the target GitHub Environment via the
+# `environment` input and must pass `secrets: inherit`. All config is read
+# from that environment's secrets/vars using the canonical key names.
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: Target GitHub Environment (staging | production)
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v2
+        with:
+          version: latest
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push secrets to Supabase
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase secrets set \
+            STRIPE_SECRET_KEY="${{ secrets.STRIPE_SECRET_KEY }}" \
+            STRIPE_WEBHOOK_SECRET="${{ secrets.STRIPE_WEBHOOK_SECRET }}" \
+            STRIPE_PRICE_BASIC="${{ vars.STRIPE_PRICE_BASIC }}" \
+            STRIPE_PRICE_PRO="${{ vars.STRIPE_PRICE_PRO }}" \
+            STRIPE_BILLING_PORTAL_CONFIGURATION_ID="${{ vars.STRIPE_BILLING_PORTAL_CONFIGURATION_ID }}" \
+            APP_URL="${{ vars.APP_URL }}" \
+            RESEND_API_KEY="${{ secrets.RESEND_API_KEY }}" \
+            RESEND_FROM_EMAIL="${{ vars.RESEND_FROM_EMAIL }}" \
+            --project-ref "${{ vars.SUPABASE_PROJECT_REF }}"
+
+      - name: Link Supabase project
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase link --project-ref "${{ vars.SUPABASE_PROJECT_REF }}"
+
+      - name: Apply database migrations
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase db push --linked
+
+      - name: Deploy edge functions
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          for fn in \
+            create-checkout-session \
+            create-basic-membership-checkout-session \
+            create-billing-portal-session \
+            stripe-webhook \
+            sync-my-subscription; do
+            supabase functions deploy "$fn" \
+              --project-ref "${{ vars.SUPABASE_PROJECT_REF }}"
+          done
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Pull Vercel Environment Information
+        run: npx vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Build Project Artifacts
+        run: npx vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          # Build-time vars Vite inlines into the bundle. Injected from the
+          # target GitHub environment so the CI build never depends on the
+          # Vercel dashboard / `vercel pull` env scope. Both are public (the
+          # anon key ships in the client bundle), so they're plain vars.
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_KEY: ${{ vars.VITE_SUPABASE_KEY }}
+          VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN }}
+
+      - name: Deploy Project Artifacts to Vercel
+        run: npx vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
