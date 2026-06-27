@@ -30,14 +30,28 @@ By consolidating from three disjointed SKUs down to two primary customer journey
 
 | Tier | Target Persona | Monthly Price (Est.) | Key Capabilities | Directory Rights | Billing Flow |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Basic (Grantee)** | Independent Projects / Grassroots Orgs | **$12 - $19 / mo** | - Submit grants<br>- Track budgets & log expenses<br>- Upload receipts & documents | **Search & View Full Profiles**<br>(Apply/Contact sponsors directly) | Paid by project (Self-Service) OR covered by Sponsor's seat quota |
-| **Premium (Fiscal Agent)** | Registered 501(c)(3) Charities / Fiscal Sponsors | **$49 - $99 / mo** | - Admin dashboard & review queue<br>- Custom approval workflows<br>- Multi-organization audit logs<br>- Export to Excel | **Own & Publish Listing**<br>(Triage inquiries, onboard projects directly as grantees) | **Pay-First Onboarding**<br>(Intake form → Stripe payment → Magic setup link) |
+| **Basic (Grantee / Self-Serve)** | Independent Projects / Small Teams | **$12 - $19 / mo** | - Submit grants<br>- Track budgets & log expenses<br>- Upload receipts & documents | **Search & View Full Profiles**<br>(Apply/Contact sponsors directly) | **Self-Serve Users:** Paid directly by the project upon signup.<br>**Invited Grantees:** Covered by Sponsor's seat quota. |
+| **Premium (Fiscal Agent)** | Registered Charities / Fiscal Sponsors | **$49 - $99 / mo** | - Admin dashboard & review queue<br>- Custom approval workflows<br>- Multi-organization audit logs<br>- Export to Excel | **Own & Publish Listing**<br>(Triage inquiries, onboard projects directly as grantees) | **Pay-First Onboarding**<br>(Intake form → Stripe payment → Magic setup link) |
 
 ---
 
 ## 3. Detailed Workflow Maps
 
-### A. Charity / Fiscal Agent Onboarding (Pay-First)
+### A. The Self-Serve Journey (Basic Tier)
+Self-serve users are independent projects who sign up without a sponsor invite. They need the tool for immediate expense tracking and might be looking for a Fiscal Agent to sponsor their work.
+
+```mermaid
+graph TD
+    A[Public Signup /signup] --> B[Create Self-Service Tenant & Grantee Account]
+    B --> C[Stripe Checkout - Basic Plan]
+    C --> D[Access to Self-Serve Dashboard]
+    D --> E[Track Budgets & Log Expenses Independently]
+    D --> F[Search Directory for Fiscal Agent Sponsor]
+    F -->|Sends Application| G[Fiscal Agent Accepts]
+    G --> H[Project is 'Onboarded' under Charity's Tenant, subscription converted to 'Covered']
+```
+
+### B. Charity / Fiscal Agent Onboarding (Pay-First Premium)
 To keep the directory high-quality and prevent spam, charities must pay before their listing or account is provisioned:
 
 ```mermaid
@@ -64,7 +78,7 @@ sequenceDiagram
     Charity->>System: Visits /fiscal-agents/onboard?token=... to set password
 ```
 
-### B. Seeker / Grantee Matching Lifecycle
+### C. Seeker / Grantee Matching Lifecycle
 ```mermaid
 graph TD
     A[Public Directory View] -->|Teaser / Blurred Contact Info| B(Requires Log In / Signup)
