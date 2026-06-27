@@ -31,16 +31,16 @@ separate seeker SKU, not the same as Pro/fiscal-agent).
 **🔴 BLOCKERS / next actions:**
 1. **Verify `send.atkasolutions.org` in Resend** (GoDaddy DNS — see `EMAIL-DNS-SETUP.md`).
    No GoDaddy access yet. Prod email blocked until then. Then set prod/staging `SMTP_FROM`.
-2. **Entitlement clobber bug (likely launch-blocker for directory SKU):** `user_memberships`
-   is one-row-per-user, upserted last-event-wins, and all access RPCs read that single row.
-   So a user can't hold two SKUs at once (basic + directory_access), AND cancelling one of a
-   user's multiple subs revokes everything. Fix: rekey `user_memberships` on
-   `(user_id, membership_tier)`. Decision needed: is "one user, two SKUs" supported?
+2. ~~**Entitlement clobber bug (likely launch-blocker for directory SKU):** `user_memberships`~~
+   ~~is one-row-per-user, upserted last-event-wins, and all access RPCs read that single row.~~
+   ~~So a user can't hold two SKUs at once (basic + directory_access), AND cancelling one of a~~
+   ~~user's multiple subs revokes everything. Fix: rekey `user_memberships` on~~
+   ~~`(user_id, membership_tier)`. Decision needed: is "one user, two SKUs" supported?~~ (OBSOLETE: `directory_access` merged into `basic` tier)
 3. **Local DB is behind repo** — `20260624120000_charity_directory` migration NOT applied to
    the running stack. Run `supabase db reset` before testing the directory paywall / Agent 3.
    (Also: user 11's premium sub was cancelled during the lapse test; reset moots it.)
-4. **Create the Directory Access price** in Stripe (test for staging, live for prod) → set
-   `STRIPE_PRICE_DIRECTORY` in each env.
+4. ~~**Create the Directory Access price** in Stripe (test for staging, live for prod) → set~~
+   ~~`STRIPE_PRICE_DIRECTORY` in each env.~~ (OBSOLETE: Merged into `basic` tier)
 5. **Set up new prod** (new Supabase + Vercel + live Stripe + webhook) and make current
    project proper staging — overview captured in chat; not started.
 
