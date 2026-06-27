@@ -66,6 +66,8 @@ jobs:
           for fn in \
             create-checkout-session \
             create-basic-membership-checkout-session \
+            create-directory-access-checkout-session \
+            create-fiscal-agent-checkout-session \
             create-billing-portal-session \
             stripe-webhook \
             sync-my-subscription; do
