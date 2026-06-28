@@ -482,6 +482,7 @@
 }
 .fad-badge-ok { background: #dcfce7; color: #166534; }
 .fad-badge-muted { background: var(--color-gray-100); color: var(--color-gray-500); }
+.fad-badge-new { background: #dbeafe; color: #1e40af; }
 .fad-meta-time { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.76rem; color: var(--color-gray-400); }
 
 .fad-card-foot { display: flex; gap: 0.5rem; margin-top: auto; }

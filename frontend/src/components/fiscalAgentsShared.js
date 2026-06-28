@@ -56,6 +56,17 @@ export function Stars({ rating }) {
   );
 }
 
+// A listing is "new" when it has no real engagement yet: rating, reviews, and
+// sponsored count are all zero or null. Such listings hide their zero-state
+// metrics and show a New badge instead (#A4).
+export function isNewListing(agent) {
+  return !agent.rating && !agent.reviews && !agent.sponsored;
+}
+
+export function NewBadge() {
+  return <span className="fad-badge fad-badge-new">New</span>;
+}
+
 export function Field({ label, children, required }) {
   return (
     <label className="fad-field">
@@ -133,7 +144,7 @@ export function AgentCard({ agent, saved, onToggleSave, onOpen, onContact }) {
             <FaMapMarkerAlt /> {agent.location}
           </p>
         </div>
-        <Stars rating={agent.rating} />
+        {isNewListing(agent) ? <NewBadge /> : <Stars rating={agent.rating} />}
       </div>
 
       <p className="fad-blurb">{agent.blurb}</p>
@@ -145,10 +156,12 @@ export function AgentCard({ agent, saved, onToggleSave, onOpen, onContact }) {
       </ul>
 
       <dl className="fad-stats">
-        <div>
-          <dt>Sponsored</dt>
-          <dd>{agent.sponsored}</dd>
-        </div>
+        {!isNewListing(agent) && (
+          <div>
+            <dt>Sponsored</dt>
+            <dd>{agent.sponsored}</dd>
+          </div>
+        )}
         <div>
           <dt>Assets</dt>
           <dd>{agent.assetsManaged}</dd>

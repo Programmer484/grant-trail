@@ -35,6 +35,8 @@ import {
   Modal,
   AgentCard,
   Toast,
+  isNewListing,
+  NewBadge,
 } from './fiscalAgentsShared';
 import SponsorshipApplicationModal from './SponsorshipApplicationModal';
 import './FiscalAgentDirectory.css';
@@ -79,8 +81,14 @@ function ProfileModal({ agent, locked, saved, onToggleSave, onClose, onContact }
               <FaMapMarkerAlt /> {agent.location}
             </p>
             <div className="fad-profile-badges">
-              <Stars rating={agent.rating} />
-              <span className="fad-reviews">{agent.reviews} reviews</span>
+              {isNewListing(agent) ? (
+                <NewBadge />
+              ) : (
+                <>
+                  <Stars rating={agent.rating} />
+                  <span className="fad-reviews">{agent.reviews} reviews</span>
+                </>
+              )}
               {agent.accepting ? (
                 <span className="fad-badge fad-badge-ok">
                   <FaCheck /> Accepting projects
@@ -140,10 +148,12 @@ function ProfileModal({ agent, locked, saved, onToggleSave, onClose, onContact }
             {!locked ? (
               <>
                 <dl className="fad-sidestats">
-                  <div>
-                    <dt>Projects sponsored</dt>
-                    <dd>{agent.sponsored}</dd>
-                  </div>
+                  {!isNewListing(agent) && (
+                    <div>
+                      <dt>Projects sponsored</dt>
+                      <dd>{agent.sponsored}</dd>
+                    </div>
+                  )}
                   <div>
                     <dt>Assets managed</dt>
                     <dd>{agent.assetsManaged}</dd>

@@ -23,6 +23,7 @@ import { supabase } from '../supabaseClient';
 import { canViewDirectory } from '../lib/policy';
 import { startCheckoutSession, MEMBERSHIP_TIERS } from '../lib/billing';
 import { mapTeaserListing, mapFullListing } from './fiscalAgents.map';
+import { isNewListing, NewBadge } from './fiscalAgentsShared';
 import SponsorshipApplicationModal from './SponsorshipApplicationModal';
 import './FiscalAgentProfile.css';
 
@@ -184,8 +185,14 @@ export default function FiscalAgentProfile({ session }) {
             <FaMapMarkerAlt /> {agent.location}
           </p>
           <div className="fad-profile-badges">
-            <Stars rating={agent.rating} />
-            <span className="fad-reviews">{agent.reviews} reviews</span>
+            {isNewListing(agent) ? (
+              <NewBadge />
+            ) : (
+              <>
+                <Stars rating={agent.rating} />
+                <span className="fad-reviews">{agent.reviews} reviews</span>
+              </>
+            )}
             {agent.accepting ? (
               <span className="fad-badge fad-badge-ok">
                 <FaCheckCircle /> Accepting projects
@@ -292,10 +299,12 @@ export default function FiscalAgentProfile({ session }) {
             {subscribed ? (
               <>
                 <dl className="fad-sidestats">
-                  <div>
-                    <dt>Projects sponsored</dt>
-                    <dd>{agent.sponsored}</dd>
-                  </div>
+                  {!isNewListing(agent) && (
+                    <div>
+                      <dt>Projects sponsored</dt>
+                      <dd>{agent.sponsored}</dd>
+                    </div>
+                  )}
                   <div>
                     <dt>Assets managed</dt>
                     <dd>{agent.assetsManaged}</dd>
