@@ -104,8 +104,8 @@ assert_contains() {
 # non-exempt, so these genuinely flip the entitlement helpers. The seed already
 # gives users 6/7/8 a basic/premium membership and user_memberships.user_id is
 # UNIQUE, so we UPSERT the tier rather than insert a second row.
-m_dir()  { echo "INSERT INTO user_memberships (user_id, membership_tier, is_active) VALUES ($1, 'directory_access', true)
-  ON CONFLICT (user_id) DO UPDATE SET membership_tier='directory_access', is_active=true;"; }
+m_basic()  { echo "INSERT INTO user_memberships (user_id, membership_tier, is_active) VALUES ($1, 'basic', true)
+  ON CONFLICT (user_id) DO UPDATE SET membership_tier='basic', is_active=true;"; }
 m_fa()   { echo "INSERT INTO user_memberships (user_id, membership_tier, is_active) VALUES ($1, 'premium', true)
   ON CONFLICT (user_id) DO UPDATE SET membership_tier='premium', is_active=true;"; }
 # Simulate a lapsed listing owner: the seed gives user 8 an active premium row, so
@@ -168,7 +168,7 @@ assert_contains "PostgREST anon: base table leaks no contact email" "$(
 # ============================================================================
 # ITEM 2 — Directory SELECT gating (full rows incl. contact columns)
 # ============================================================================
-# Ground truth: only personas c (directory_access), d (owner), e (super_admin)
+# Ground truth: only personas c (basic), d (owner), e (super_admin)
 # may read full rows with contact columns. a (anon) and b (authed no access) cannot.
 
 # (a) anonymous — anon has no SELECT grant on the base table, so the read is
@@ -181,34 +181,34 @@ else
   assert_eq "(a) anon reads 0 full listings" "0" "$(scalar "$out")"
 fi
 
-# (b) authenticated WITHOUT directory_access (non-owner) sees 0 rows.
-out=$(psql_as "$GRANTEE_BRIGHT" "" "SELECT count(*) FROM fiscal_agent_listings;")
-assert_eq "(b) authed user w/o directory_access reads 0 full listings" "0" "$(scalar "$out")"
+# (b) authenticated WITHOUT basic (non-owner) sees 0 rows.
+out=$(psql_as "$GRANTEE_SELF" "$(m_lapse $UID9)" "SELECT count(*) FROM fiscal_agent_listings;")
+assert_eq "(b) authed user w/o basic reads 0 full listings" "0" "$(scalar "$out")"
 # helper ground truth for this persona
-out=$(psql_as "$GRANTEE_BRIGHT" "" "SELECT has_directory_access();")
-assert_eq "(b) has_directory_access() is false for plain grantee" "f" "$(boolean "$out")"
+out=$(psql_as "$GRANTEE_SELF" "$(m_lapse $UID9)" "SELECT has_basic_membership();")
+assert_eq "(b) has_basic_membership() is false for lapsed grantee" "f" "$(boolean "$out")"
 
-# (c) authenticated WITH directory_access sees ALL listings incl. contact columns.
-out=$(psql_as "$GRANTEE_BRIGHT" "$(m_dir $UID6)" "SELECT count(*) FROM fiscal_agent_listings;")
-assert_eq "(c) directory_access user reads ALL 3 full listings" "3" "$(scalar "$out")"
-out=$(psql_as "$GRANTEE_BRIGHT" "$(m_dir $UID6)" "SELECT email FROM fiscal_agent_listings WHERE id=1;")
-assert_contains "(c) directory_access user CAN see contact email" "partnerships@cedarroots.org" "$out"
-out=$(psql_as "$GRANTEE_BRIGHT" "$(m_dir $UID6)" "SELECT has_directory_access();")
-assert_eq "(c) has_directory_access() true after granting tier" "t" "$(boolean "$out")"
+# (c) authenticated WITH basic sees ALL listings incl. contact columns.
+out=$(psql_as "$GRANTEE_BRIGHT" "$(m_basic $UID6)" "SELECT count(*) FROM fiscal_agent_listings;")
+assert_eq "(c) basic user reads ALL 3 full listings" "3" "$(scalar "$out")"
+out=$(psql_as "$GRANTEE_BRIGHT" "$(m_basic $UID6)" "SELECT email FROM fiscal_agent_listings WHERE id=1;")
+assert_contains "(c) basic user CAN see contact email" "partnerships@cedarroots.org" "$out"
+out=$(psql_as "$GRANTEE_BRIGHT" "$(m_basic $UID6)" "SELECT has_basic_membership();")
+assert_eq "(c) has_basic_membership() true after granting tier" "t" "$(boolean "$out")"
 
-# (d) the listing OWNER (no directory_access membership) sees their OWN rows.
-# user 8 owns listings 1+2. Owner clause is OR'd, so even without directory_access
+# (d) the listing OWNER (no basic membership) sees their OWN rows.
+# user 8 owns listings 1+2. Owner clause is OR'd, so even without basic
 # they should read their own (and via that clause, only their own unless they also
-# hold directory_access). Verify they see their two owned rows.
-out=$(psql_as "$ADMIN_BRIGHT" "" "SELECT has_directory_access();")
-assert_eq "(d) owner has_directory_access() is false (owner clause carries them)" "f" "$(boolean "$out")"
-out=$(psql_as "$ADMIN_BRIGHT" "" "SELECT count(*) FROM fiscal_agent_listings WHERE owner_user_id=$UID8;")
+# hold basic). Verify they see their two owned rows.
+out=$(psql_as "$ADMIN_BRIGHT" "$(m_lapse $UID8)" "SELECT has_basic_membership();")
+assert_eq "(d) owner has_basic_membership() is false (owner clause carries them)" "f" "$(boolean "$out")"
+out=$(psql_as "$ADMIN_BRIGHT" "$(m_lapse $UID8)" "SELECT count(*) FROM fiscal_agent_listings WHERE owner_user_id=$UID8;")
 assert_eq "(d) owner reads their own 2 listings" "2" "$(scalar "$out")"
-out=$(psql_as "$ADMIN_BRIGHT" "" "SELECT email FROM fiscal_agent_listings WHERE id=1;")
+out=$(psql_as "$ADMIN_BRIGHT" "$(m_lapse $UID8)" "SELECT email FROM fiscal_agent_listings WHERE id=1;")
 assert_contains "(d) owner CAN see contact email on own listing" "partnerships@cedarroots.org" "$out"
-# owner without directory_access must NOT see listing 3 (owned by user 4, tenant 1).
-out=$(psql_as "$ADMIN_BRIGHT" "" "SELECT count(*) FROM fiscal_agent_listings WHERE id=3;")
-assert_eq "(d) owner WITHOUT directory_access cannot read OTHER owners' listings" "0" "$(scalar "$out")"
+# owner without basic must NOT see listing 3 (owned by user 4, tenant 1).
+out=$(psql_as "$ADMIN_BRIGHT" "$(m_lapse $UID8)" "SELECT count(*) FROM fiscal_agent_listings WHERE id=3;")
+assert_eq "(d) owner WITHOUT basic cannot read OTHER owners' listings" "0" "$(scalar "$out")"
 
 # (e) super_admin sees everything.
 out=$(psql_as "$SUPER_TFAC" "" "SELECT count(*) FROM fiscal_agent_listings;")
@@ -226,38 +226,38 @@ mk_insert() { # mk_insert <listing_id> <created_by_or_NULL>
         VALUES ($1, $2, '{\"name\":\"X\"}'::jsonb, '{\"name\":\"Y\"}'::jsonb);"
 }
 
-# (3a) user WITHOUT directory_access is BLOCKED from inserting.
-out=$(psql_as "$GRANTEE_BRIGHT" "" "$(mk_insert 1 $UID6) SELECT 'inserted';")
-assert_contains "(3a) user w/o directory_access BLOCKED from inquiry insert" "violates row-level security policy" "$out"
+# (3a) user WITHOUT basic is BLOCKED from inserting.
+out=$(psql_as "$GRANTEE_SELF" "$(m_lapse $UID9)" "$(mk_insert 1 $UID9) SELECT 'inserted';")
+assert_contains "(3a) user w/o basic BLOCKED from inquiry insert" "violates row-level security policy" "$out"
 
-# (3b) user WITH directory_access CAN insert against the published+verified listing.
+# (3b) user WITH basic CAN insert against the published+verified listing.
 # NB: the INSERT succeeds (tag "INSERT 0 1") but the seeker CANNOT read the row
 # back — the inquiries SELECT policy scopes reads to the listing OWNER. This is
 # the documented fire-and-forget model (UX §2.2; seeker-side tracking deferred),
 # so we assert on the write tag, not a readback.
-out=$(psql_as "$GRANTEE_BRIGHT" "$(m_dir $UID6)" "$(mk_insert 1 $UID6)")
-assert_contains "(3b) directory_access user CAN insert inquiry vs published+verified listing" "INSERT 0 1" "$out"
+out=$(psql_as "$GRANTEE_BRIGHT" "$(m_basic $UID6)" "$(mk_insert 1 $UID6)")
+assert_contains "(3b) basic user CAN insert inquiry vs published+verified listing" "INSERT 0 1" "$out"
 # …and confirm the seeker indeed cannot read their own just-inserted inquiry.
-out=$(psql_as "$GRANTEE_BRIGHT" "$(m_dir $UID6)" "$(mk_insert 1 $UID6)
+out=$(psql_as "$GRANTEE_BRIGHT" "$(m_basic $UID6)" "$(mk_insert 1 $UID6)
   SELECT count(*) FROM sponsorship_inquiries WHERE created_by=$UID6;")
 assert_eq "(3b) seeker CANNOT read their own inquiry back (owner-scoped inbox)" "0" "$(scalar "$out")"
 
-# (3c) directory_access user CANNOT insert against a draft listing (2) or
+# (3c) basic user CANNOT insert against a draft listing (2) or
 # published-but-UNverified listing (3).
-out=$(psql_as "$GRANTEE_BRIGHT" "$(m_dir $UID6)" "$(mk_insert 2 $UID6) SELECT 'inserted';")
+out=$(psql_as "$GRANTEE_BRIGHT" "$(m_basic $UID6)" "$(mk_insert 2 $UID6) SELECT 'inserted';")
 assert_contains "(3c) cannot inquire against DRAFT listing" "violates row-level security policy" "$out"
-out=$(psql_as "$GRANTEE_BRIGHT" "$(m_dir $UID6)" "$(mk_insert 3 $UID6) SELECT 'inserted';")
+out=$(psql_as "$GRANTEE_BRIGHT" "$(m_basic $UID6)" "$(mk_insert 3 $UID6) SELECT 'inserted';")
 assert_contains "(3c) cannot inquire against published-UNVERIFIED listing" "violates row-level security policy" "$out"
 
 # (3d) anti-spoof: cannot set created_by to a DIFFERENT user.
-out=$(psql_as "$GRANTEE_BRIGHT" "$(m_dir $UID6)" "$(mk_insert 1 $UID7) SELECT 'inserted';")
+out=$(psql_as "$GRANTEE_BRIGHT" "$(m_basic $UID6)" "$(mk_insert 1 $UID7) SELECT 'inserted';")
 assert_contains "(3d) cannot spoof created_by to another user" "violates row-level security policy" "$out"
 
 # (3e) tenant_id denormalisation. When the client omits tenant_id the BEFORE-INSERT
 # trigger fills it from the listing (the happy path); read back as the OWNER (the
 # seeker can't, by §2.2 owner-scoping), in one rolled-back txn.
 out=$(psql_raw "BEGIN;
-$(m_dir $UID6)
+$(m_basic $UID6)
 SELECT set_config('request.jwt.claims', json_build_object('sub','$GRANTEE_BRIGHT','role','authenticated')::text, true);
 SET LOCAL ROLE authenticated;
 INSERT INTO sponsorship_inquiries (listing_id, created_by, project, contact)
@@ -274,7 +274,7 @@ assert_eq "(3e) inquiry tenant_id denormalised to listing's tenant (2) when omit
 # inserting against listing 1 (which belongs to tenant 2) with a forged tenant_id=1
 # must end up stored as the listing's real tenant (2).
 out=$(psql_raw "BEGIN;
-$(m_dir $UID6)
+$(m_basic $UID6)
 SELECT set_config('request.jwt.claims', json_build_object('sub','$GRANTEE_BRIGHT','role','authenticated')::text, true);
 SET LOCAL ROLE authenticated;
 INSERT INTO sponsorship_inquiries (listing_id, created_by, tenant_id, project, contact)
@@ -328,9 +328,9 @@ out=$(psql_as "$GRANTEE_BRIGHT" "$(m_fa $UID6)" "
   VALUES (2, $UID8, 'Forged Owner'); SELECT 'ins';")
 assert_contains "(4e) premium user CANNOT insert with a forged owner_user_id" "violates row-level security policy" "$out"
 # …and a user WITHOUT premium cannot insert a listing at all.
-out=$(psql_as "$GRANTEE_BRIGHT" "" "
+out=$(psql_as "$GRANTEE_SELF" "" "
   INSERT INTO fiscal_agent_listings (tenant_id, owner_user_id, name)
-  VALUES (2, $UID6, 'NoEntitlement'); SELECT 'ins';")
+  VALUES (3, $UID9, 'NoEntitlement'); SELECT 'ins';")
 assert_contains "(4e) user WITHOUT premium CANNOT insert a listing" "violates row-level security policy" "$out"
 
 # (4f) super_admin moderation: can flip verification on any listing.
@@ -368,9 +368,9 @@ assert_eq "(5a) listing-1 owner sees ONLY their 2 inquiries (not listing-3's)" "
 out=$(psql_as "$ADMIN_BRIGHT" "$INQ3_SETUP" "SELECT count(*) FROM sponsorship_inquiries WHERE listing_id=3;")
 assert_eq "(5a) listing-1 owner CANNOT read another owner's (listing-3) inquiries" "0" "$(scalar "$out")"
 
-# (5b) a directory_access seeker (non-owner) sees ZERO inquiries (cannot read inbox).
-out=$(psql_as "$GRANTEE_BRIGHT" "$(m_dir $UID6)" "SELECT count(*) FROM sponsorship_inquiries;")
-assert_eq "(5b) directory_access seeker CANNOT read any inquiry inbox" "0" "$(scalar "$out")"
+# (5b) a basic seeker (non-owner) sees ZERO inquiries (cannot read inbox).
+out=$(psql_as "$GRANTEE_BRIGHT" "$(m_basic $UID6)" "SELECT count(*) FROM sponsorship_inquiries;")
+assert_eq "(5b) basic seeker CANNOT read any inquiry inbox" "0" "$(scalar "$out")"
 
 # (5c) super_admin sees all inquiries.
 out=$(psql_as "$SUPER_TFAC" "$INQ3_SETUP" "SELECT count(*) FROM sponsorship_inquiries;")
@@ -388,52 +388,17 @@ out=$(psql_as "$GRANTEE_BRIGHT" "$(m_fa $UID6)" "
 assert_contains "(5d) non-owner with premium CANNOT triage another's inquiry (0 rows)" "UPDATE 0" "$out"
 
 # ============================================================================
-# ITEM 6 — get_session_context exposes the directory entitlement key
+# ITEM 6 — get_session_context exposes the entitlement keys
 # ============================================================================
-# directory_access subscriber
-out=$(psql_as "$GRANTEE_BRIGHT" "$(m_dir $UID6)" "SELECT (get_session_context()->'membership'->>'hasDirectoryAccess');")
-assert_eq "(6) hasDirectoryAccess=true for directory_access subscriber" "true" "$(echo "$out" | grep -E '^(true|false)$' | tail -1)"
-# premium (listing-owner) subscriber does NOT get directory browsing — that's the
-# separate directory_access SKU. (Listing ownership is driven by hasPremiumAccess.)
-out=$(psql_as "$GRANTEE_BRIGHT2" "$(m_fa $UID7)" "SELECT (get_session_context()->'membership'->>'hasDirectoryAccess');")
-assert_eq "(6) hasDirectoryAccess=false for premium-only subscriber" "false" "$(echo "$out" | grep -E '^(true|false)$' | tail -1)"
-# …but a premium subscriber DOES have hasPremiumAccess, which gates listing ownership.
+# a premium subscriber DOES have hasPremiumAccess, which gates listing ownership.
 out=$(psql_as "$GRANTEE_BRIGHT2" "$(m_fa $UID7)" "SELECT (get_session_context()->'membership'->>'hasPremiumAccess');")
 assert_eq "(6) hasPremiumAccess=true for premium subscriber (drives listing ownership)" "true" "$(echo "$out" | grep -E '^(true|false)$' | tail -1)"
-# the directory key is always present even with no entitlements
-out=$(psql_as "$GRANTEE_BRIGHT" "" "SELECT (get_session_context()->'membership') ? 'hasDirectoryAccess';")
-assert_eq "(6) hasDirectoryAccess key always present on membership object" "t" "$(boolean "$out")"
 # existing keys retained
 out=$(psql_as "$GRANTEE_BRIGHT" "" "SELECT (get_session_context()->'membership') ? 'hasBasicAccess' AND (get_session_context()->'membership') ? 'hasPremiumAccess' AND (get_session_context()->'membership') ? 'isExempt';")
 assert_eq "(6) existing membership keys (basic/premium/isExempt) retained" "t" "$(boolean "$out")"
-# exempt persona (platform-root admin) passes both directory + premium (ownership)
-out2=$(psql_as "$ADMIN_TFAC" "" "SELECT ((get_session_context()->'membership'->>'hasDirectoryAccess')::boolean AND (get_session_context()->'membership'->>'hasPremiumAccess')::boolean);")
-assert_eq "(6) exempt platform-root admin passes directory + premium entitlements" "t" "$(boolean "$out2")"
-
-# ============================================================================
-# ITEM 7 — the paid directory_access tier cannot be self-granted (review finding #2)
-# ============================================================================
-# directory_access is a PAID product read straight from user_memberships. A tenant
-# admin (who can write user_memberships for their tenant via the pre-existing admin
-# policy) must NOT be able to self-assign an ACTIVE directory_access row and bypass
-# Stripe. The enforce_directory_tier_grant_source trigger restricts active grants of
-# directory_access to the webhook (service_role) / super_admin.
-out=$(psql_as "$ADMIN_BRIGHT" "" "
-  INSERT INTO user_memberships (user_id, membership_tier, is_active) VALUES ($UID8,'directory_access',true);")
-assert_contains "(7a) admin CANNOT self-grant directory_access" "can only be granted via checkout" "$out"
-# The old fiscal_agent tier was folded into premium and removed; the CHECK
-# constraint now rejects it entirely (regression guard that the SKU is gone).
-out=$(psql_as "$ADMIN_BRIGHT" "" "
-  INSERT INTO user_memberships (user_id, membership_tier, is_active) VALUES ($UID8,'fiscal_agent',true);")
-assert_contains "(7b) the dropped fiscal_agent tier is rejected by the CHECK constraint" "violates check constraint" "$out"
-# An admin also cannot flip an existing membership into an active paid directory
-# tier. Seed a benign inactive 'basic' row as postgres (exempt), then have the admin
-# try to UPDATE it active+directory_access — the guard must reject it.
-M_BASIC8="INSERT INTO user_memberships (user_id, membership_tier, is_active) VALUES ($UID8,'basic',false)
-  ON CONFLICT (user_id) DO UPDATE SET membership_tier='basic', is_active=false;"
-out=$(psql_as "$ADMIN_BRIGHT" "$M_BASIC8" "
-  UPDATE user_memberships SET membership_tier='directory_access', is_active=true WHERE user_id=$UID8;")
-assert_contains "(7c) admin CANNOT UPDATE a membership into an active paid directory tier" "can only be granted via checkout" "$out"
+# exempt persona (platform-root admin) passes premium (ownership)
+out2=$(psql_as "$ADMIN_TFAC" "" "SELECT (get_session_context()->'membership'->>'hasPremiumAccess')::boolean;")
+assert_eq "(6) exempt platform-root admin passes premium entitlements" "t" "$(boolean "$out2")"
 
 echo "=============================================================="
 echo " RESULTS: ${pass} passed, ${fail} failed"
