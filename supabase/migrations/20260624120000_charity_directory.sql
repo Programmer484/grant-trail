@@ -161,7 +161,7 @@ CREATE OR REPLACE TRIGGER "trg_sponsorship_inquiries_tenant_id"
 -- ----------------------------------------------------------------------------
 -- Seeker access uses the pre-existing public.has_basic_membership().
 -- Listing OWNERSHIP is NOT a separate tier: a charity operates as a fiscal agent
--- under the existing PREMIUM plan ("Fiscal Agents Plan", STRIPE_PRICE_PRO), so
+-- under the existing PREMIUM plan ("Fiscal Agents Plan", STRIPE_PRICE_FISCAL_AGENT), so
 -- listing publish/triage gates on the pre-existing has_premium_membership()
 -- rather than a redundant fiscal_agent SKU.
 
