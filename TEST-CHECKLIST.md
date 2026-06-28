@@ -1,33 +1,60 @@
-# GrantTrail — Temporary Test Checklist
+# GrantTrail — Prod Cutover Checklist
 
-> **Temporary working doc.** Tracks what still has to happen before the prod
-> cutover. The core paid flows (paywall, tier mapping, lapse/reactivate, webhook
-> idempotency, payment-confirmation email + failure isolation) are verified and
-> have been removed from this list. Delete this doc once the items below are done.
+> **Temporary working doc.** The core paid flows (paywall, tier mapping,
+> lapse/reactivate, webhook idempotency, payment-confirmation email + failure
+> isolation) are already verified and were removed from this list. What remains is
+> the prod cutover, split into two phases.
 >
-> **Source of truth** for expected behavior:
-> - `docs/tutorials/Grantee-Walkthrough.md`
-> - `docs/tutorials/Admin-Walkthrough.md`
-> - `docs/tutorials/Super-Admin-Walkthrough.md`
-> - `docs/tutorials/payment-and-deployment-guide.md` (payment + email flow)
-> - `docs/explanation/pricing_and_subscription_design.md` (payment models & directory access)
-> - `docs/PROD-EMAIL-RUNBOOK.md` (step-by-step for everything below)
-
-**Legend:** 🟢 agent does it end-to-end · 🟠 needs a human action · 🔴 needs a human decision
+> **All code and wiring are already written.** Phase 1 stands up prod with email
+> intentionally OFF; **domain verification is the only thing that gates Phase 2**,
+> and turning email on after it is pure configuration — no code changes.
+>
+> Step-by-step detail + exact commands/DNS records: **`docs/PROD-EMAIL-RUNBOOK.md`**.
+>
+> **Legend:** 🟠 human action · 🔴 human decision
 
 ---
 
-## Remaining before prod cutover
+## Phase 1 — Stand up prod & verify everything except email
 
-All open items are human-only (accounts / DNS / a real purchase); see the runbook
-section noted on each.
+> Email is deliberately OFF in this phase: leave `RESEND_API_KEY` and `EMAIL_FROM`
+> **blank**. The send is failure-isolated, so blank = the receipt is silently
+> skipped, nothing else is affected (no errors, no `system_logs` rows). Nothing
+> here depends on the Resend domain.
 
-- [ ] 🟠 **Set prod email secrets** — `RESEND_API_KEY` (secret) + `EMAIL_FROM` (variable)
-  in the GitHub `production` environment; `deploy.yml` forwards them to Supabase.
-  `EMAIL_FROM` must be an address on the Resend-verified domain. → runbook §1.
-- [ ] 🟠 **Verify `send.atkasolutions.org` in Resend** (GoDaddy DNS: MX, SPF, DKIM,
-  DMARC). Needs GoDaddy access; unblocks delivery to real customers. → runbook §3 / `EMAIL-DNS-SETUP.md`.
-- [ ] 🔴 **Stand up new prod** — new Supabase + Vercel + live Stripe products/prices +
-  live webhook, and demote the current project to `staging`. → runbook §5.
-- [ ] 🟠 **End-to-end human smoke test** — one full real test-mode purchase on the
-  deployed URL: checkout → receipt email lands → paywall lifts. → runbook §4.
+**Provision** (runbook §5):
+- [ ] 🟠 Demote the current project to staging: `node scripts/deploy_secrets.js --env staging`
+- [ ] 🔴 Create the new **Supabase** prod project → copy its **project ref**; mint an access token (Account → Access Tokens)
+- [ ] 🔴 Create **live Stripe** products + prices — Basic, Fiscal Agent (Pro), Directory → copy each live `price_…` id *(you decide which id is which; a wrong map = wrong charge)*
+- [ ] 🟠 Run `npx vercel link` → confirm the prod Vercel **project id is different from staging's** *(deploy.yml always deploys `--prod`, so they must be separate projects)*
+- [ ] 🟠 Run `npm run deploy:secrets` once → it scaffolds `.deploy/production.env`. Fill the **MANDATORY** block only: Supabase token + ref, `STRIPE_SECRET_KEY=sk_live_…`, the live `price_…` ids, `VERCEL_TOKEN`, `APP_URL`. **Leave `RESEND_API_KEY` and `EMAIL_FROM` blank.**
+- [ ] 🟠 Run `npm run deploy:secrets` again → pushes secrets to the GitHub `production` env and creates the live Stripe webhook
+- [ ] 🟠 Trigger **`deploy-prod.yml`** (Actions → Run workflow) → deploys DB + edge functions + Vercel; confirm the run is green
+- [ ] 🟠 In the prod Supabase SQL editor, wire the DB rows to the live Stripe product ids (runbook §5 step 8 / `docs/how_to/prod_setup.md`)
+
+**Verify** (no email needed):
+- [ ] 🟠 Open the live URL, sign up a brand-new grantee → confirm you hit the **paywall** and can't reach grant/expense features
+- [ ] 🟠 In Supabase → **Edge Functions → Secrets**, confirm `RESEND_API_KEY` / `EMAIL_FROM` are **absent** (email correctly off)
+
+---
+
+## Phase 2 — Turn on email (MANDATORY before launch; the only step needing domain verification)
+
+> **Required to complete the cutover.** Email is "optional" only in that Phase 1 can
+> deploy without it — the launch is **not** done until receipts are live to real
+> customers. This is the single remaining gate; all code + wiring is already in
+> place, so it's config + one test.
+
+- [ ] 🟠 **Verify `send.atkasolutions.org` in Resend** — add the domain in Resend, add the 4 GoDaddy DNS records (MX, SPF, DKIM, DMARC), click **Verify** *(runbook §3 / `EMAIL-DNS-SETUP.md`)*
+- [ ] 🟠 Create a Resend **API key** (Resend → API Keys → `re_…`)
+- [ ] 🟠 Set the two values in the GitHub `production` env:
+  - `gh secret set RESEND_API_KEY --env production` → paste `re_…`
+  - `gh variable set EMAIL_FROM --env production --body 'GrantTrail <receipts@send.atkasolutions.org>'`
+- [ ] 🟠 Re-run **`deploy-prod.yml`** → confirm `RESEND_API_KEY` + `EMAIL_FROM` now appear in Supabase → Edge Functions → Secrets
+- [ ] 🟠 **End-to-end smoke test** (runbook §4): one real purchase on the live URL (live card, **refund after** in Stripe) → confirm **both** the paywall lifts **and** the receipt email lands in your inbox with the right plan / amount / date. *(The purchase smoke is here, not Phase 1, so a single real charge validates the paywall lift and the email together.)* If the email doesn't arrive: check `system_logs` for `payment_confirmation_email_failure` and the Resend → **Emails** dashboard.
+
+> **Want to validate the email code path before the domain is ready?** Optional: set
+> `RESEND_API_KEY` to a real key and `EMAIL_FROM=onboarding@resend.dev`, then do a
+> purchase — Resend's sandbox sender delivers **only to your Resend account's own
+> email**, but it proves the send works. Domain verification is still required to
+> deliver to real customers.

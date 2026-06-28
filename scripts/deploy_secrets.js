@@ -85,9 +85,13 @@ const STAGES = {
     optional: [
       'STRIPE_BILLING_PORTAL_CONFIGURATION_ID',
       'VITE_SENTRY_DSN',
-      // RESEND_API_KEY + EMAIL_FROM are required — email is a real product
-      // surface. Both must be set for the payment-confirmation receipt to send;
-      // EMAIL_FROM must be on a Resend-verified domain.
+      // Email is optional to DEPLOY so prod can be stood up BEFORE the sending
+      // domain is verified in Resend. When both are blank they are skipped (not
+      // pushed) and the send no-ops cleanly — no failure rows, payment unaffected.
+      // Turning receipts on is pure config: set RESEND_API_KEY (secret) +
+      // EMAIL_FROM (variable, on a Resend-verified domain) and re-push. No code.
+      'RESEND_API_KEY',
+      'EMAIL_FROM',
     ],
     autoFetch: true,
   },
