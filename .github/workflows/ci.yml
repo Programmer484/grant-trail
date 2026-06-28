@@ -155,8 +155,7 @@ jobs:
           cat > supabase/.env <<'ENVEOF'
           STRIPE_SECRET_KEY="sk_test_dummy_ci"
           STRIPE_PRICE_BASIC="price_dummy_basic"
-          STRIPE_PRICE_PRO="price_dummy_pro"
-          STRIPE_PRICE_DIRECTORY="price_dummy_directory"
+          STRIPE_PRICE_FISCAL_AGENT="price_dummy_fiscal_agent"
           STRIPE_WEBHOOK_SECRET="whsec_dummy"
           APP_URL="http://localhost:3000"
           ENVEOF
@@ -260,8 +259,7 @@ jobs:
           # TEST-mode Stripe secrets, sourced from CI secrets (never prod keys).
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY_TEST }}
           STRIPE_PRICE_BASIC: ${{ secrets.STRIPE_PRICE_BASIC_TEST }}
-          STRIPE_PRICE_PRO: ${{ secrets.STRIPE_PRICE_PRO_TEST }}
-          STRIPE_PRICE_DIRECTORY: ${{ secrets.STRIPE_PRICE_DIRECTORY_TEST }}
+          STRIPE_PRICE_FISCAL_AGENT: ${{ secrets.STRIPE_PRICE_FISCAL_AGENT_TEST }}
           STRIPE_API_KEY: ${{ secrets.STRIPE_SECRET_KEY_TEST }}
           APP_URL: http://localhost:3000
         run: |
@@ -278,8 +276,7 @@ jobs:
           cat > supabase/.env <<ENVEOF
           STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
           STRIPE_PRICE_BASIC=${STRIPE_PRICE_BASIC}
-          STRIPE_PRICE_PRO=${STRIPE_PRICE_PRO}
-          STRIPE_PRICE_DIRECTORY=${STRIPE_PRICE_DIRECTORY:-price_dummy_directory}
+          STRIPE_PRICE_FISCAL_AGENT=${STRIPE_PRICE_FISCAL_AGENT}
           STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
           APP_URL=${APP_URL}
           ENVEOF

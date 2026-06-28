@@ -57,5 +57,16 @@ RESEND_API_KEY=<resend api key>                          # secret
 EMAIL_FROM=GrantTrail <receipts@send.atkasolutions.org>  # variable
 ```
 
-Both must be set in the prod secrets/variables (see `docs/how_to/prod_setup.md` → "Turning on email"),
-not just locally. `EMAIL_FROM` must be on the domain verified above.
+Push to both environments:
+
+```bash
+gh secret set RESEND_API_KEY --env production --body "re_..."
+gh variable set EMAIL_FROM --env production --body "GrantTrail <receipts@send.atkasolutions.org>"
+
+gh secret set RESEND_API_KEY --env staging --body "re_..."
+gh variable set EMAIL_FROM --env staging --body "GrantTrail <receipts@send.atkasolutions.org>"
+```
+
+Then re-run **Deploy to Production** (GitHub Actions → Deploy to Production → Run workflow).
+
+**Smoke test:** make one real purchase with a live card → refund after → confirm the paywall lifts and the receipt email arrives. Check Resend → Emails dashboard if it doesn't.
