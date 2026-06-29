@@ -57,13 +57,7 @@ entirely** — including all the DNS work.
 
 Assumes Part A is done (resources exist, domain verified, you have access). **No DNS here.**
 
-### 1. Link Vercel (first time on a machine)
-
-`npx vercel link` — lets `deploy:secrets` read your Vercel org/project ids from
-`.vercel/project.json`. Ensure the prod Vercel project is **separate from staging's**
-(`deploy.yml` always deploys `--prod`).
-
-### 2. Fill & push config
+### 1. Fill & push config
 
 ```bash
 npm run deploy:secrets        # first run scaffolds .deploy/production.env, then exits
@@ -85,14 +79,14 @@ npm run deploy:secrets        # pushes to GitHub `production`, creates the live 
 > stands up with receipts off (the send no-ops cleanly — no errors, no failure rows).
 > Turn them on later — see [Turning on email](#turning-on-email).
 
-### 3. Trigger the deploy
+### 2. Trigger the deploy
 
 GitHub → [Actions → **Deploy to Production**](https://github.com/Programmer484/grant-trail/actions/workflows/deploy-prod.yml)
 → Run workflow → approve the environment prompt. It pushes Supabase secrets, applies
 migrations, deploys edge functions, and builds + deploys the frontend (injecting the Vite
 vars from the `production` env). Confirm the run is green.
 
-### 4. Seed Stripe product IDs (data, not config)
+### 3. Seed Stripe product IDs (data, not config)
 
 In the prod [Supabase SQL editor](https://supabase.com/dashboard/project/_/sql):
 
@@ -103,7 +97,7 @@ SET basic_membership_product_id   = 'prod_...',   -- Basic product ID
 WHERE id = 1;
 ```
 
-### 5. Smoke test
+### 4. Smoke test
 
 Sign up as a new user on the prod URL → hit the paywall → purchase (live card, **refund
 after** in Stripe) → confirm the paywall lifts, and — if email is on — the receipt lands
