@@ -16,6 +16,12 @@ Runs fully offline with deterministic local keys and seeded auth users — no ma
 creation, no paywall (seeded memberships bypass it). Log in with one of the
 [test accounts](#test-accounts-password-password123) below.
 
+`npm run setup` also pre-fills `frontend/.env.local` (Supabase URL + anon key, works as-is —
+`VITE_`-prefixed vars baked into the bundle, restart dev server after changing) and installs the
+git hooks. `db:start` resumes the existing local DB; `db:reset` wipes and rebuilds from the
+migrations + `seed.sql`. See [Dev Practices](dev_practices.md) for the migration baseline,
+hooks, and everyday gotchas.
+
 ## Concepts (60 seconds)
 
 - **Tenant** = the account / data-isolation boundary (`tenants` table). **Organization** =
@@ -24,33 +30,6 @@ creation, no paywall (seeded memberships bypass it). Log in with one of the
   `super_admin` (cross-tenant, via `/super/tenants`).
 - **Tenant types:** *managed* (approval workflows, invite signup, admin role — e.g. TFAC) vs
   *self-service* (open signup, auto-approved, no admin role).
-
-### What `npm run setup` does
-
-1. **`npm install --prefix frontend`** — frontend deps (the only install; root has no devDeps).
-2. **Copies env templates** — `frontend/.env.local` (pre-filled with the local Supabase URL +
-   anon key — works as-is) and `supabase/functions/.env` for edge-function secrets (blank Stripe
-   keys; the app boots fine without them, only billing functions need them).
-3. **`install-git-hooks.js`** — `git config core.hooksPath .githooks`, wiring:
-   - **pre-push** — blocks a push with uncaptured schema drift, then runs `npm run verify`.
-   - **post-merge** — after a pull, runs `supabase migration up` (incremental; preserves data).
-
-### `db:start` vs `db:reset`
-
-`db:start` boots the stack (resumes an existing DB). `db:reset` wipes and rebuilds from
-scratch — re-applies all migrations + `seed.sql`, then regenerates `database.types.ts`.
-
-Migrations are **squashed** into two baseline files (`20260630130000_squashed_schema.sql` +
-`20260630140000_bootstrap_data.sql`); new changes go on top. See
-[Dev Practices → Schema changes](dev_practices.md#schema-changes-local-first-migrations).
-
-### Frontend env vars
-
-`frontend/.env.local` is created by `npm run setup` (git-ignored, pre-filled with the local
-Supabase URL + anon key — works as-is, nothing to fill in for local dev). It holds two vars,
-`VITE_SUPABASE_URL` and `VITE_SUPABASE_KEY`, read by `supabaseClient.js` / `lib/billing.js`.
-Vars **must** start with `VITE_` (baked into the bundle at build time — restart the dev server
-after changing). Adding a new one? Add a placeholder to `frontend/.env.example` too.
 
 ### Test accounts (password `password123`)
 
@@ -94,19 +73,3 @@ Verify a checkout wrote through:
 docker exec supabase_db_grant-trail psql -U postgres -d postgres \
   -c "SELECT stripe_subscription_id, status FROM subscriptions ORDER BY id DESC LIMIT 3;"
 ```
-
-## Things every dev should know
-
-- **Two user IDs, not interchangeable:** `auth.users.id` (UUID, Supabase Auth) vs `users.id`
-  (int PK, the FK used everywhere else — `grant_record.user_id`, `expenses.user_id`, …).
-- **RLS fails silently:** a disallowed row returns `data:null, error:null`, not an exception.
-  Always null-check. Less data than expected → suspect RLS.
-- **Triggers own side effects** — spending totals (`total_spent`, `remaining_balance`,
-  `amount_spent`), `grant_status_history`, and `notifications` are all trigger-managed. Don't
-  replicate them in the frontend or you'll create duplicate data.
-- **Never edit a committed migration** — prod tracks by version, not content; edits never re-run.
-- **`stripe-webhook` is the only `verify_jwt=false` function** — Stripe authenticates via the
-  `stripe-signature` header, not a JWT. Don't change it.
-- **CSS uses design tokens** — `var(--color-primary)`, not raw hex; tokens in
-  `frontend/src/styles/variables.css`. No Tailwind.
-- **Removed edge functions aren't auto-pruned:** `npm run functions:prune -- --project-ref <ref>`.

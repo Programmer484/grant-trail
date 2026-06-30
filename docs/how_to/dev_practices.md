@@ -93,6 +93,23 @@ the `service_role` (Stripe) path.
 
 ---
 
+## Gotchas
+
+- **Two user IDs, not interchangeable:** `auth.users.id` (UUID, Supabase Auth) vs `users.id`
+  (int PK, the FK used everywhere else — `grant_record.user_id`, `expenses.user_id`, …).
+- **RLS fails silently:** a disallowed row returns `data:null, error:null`, not an exception.
+  Always null-check. Less data than expected → suspect RLS.
+- **Triggers own side effects** — spending totals (`total_spent`, `remaining_balance`,
+  `amount_spent`), `grant_status_history`, and `notifications` are all trigger-managed. Don't
+  replicate them in the frontend or you'll create duplicate data.
+- **`stripe-webhook` is the only `verify_jwt=false` function** — Stripe authenticates via the
+  `stripe-signature` header, not a JWT. Don't change it.
+- **CSS uses design tokens** — `var(--color-primary)`, not raw hex; tokens in
+  `frontend/src/styles/variables.css`. No Tailwind.
+- **Removed edge functions aren't auto-pruned:** `npm run functions:prune -- --project-ref <ref>`.
+
+---
+
 ## Troubleshooting
 
 | Symptom | Cause → Fix |
