@@ -168,11 +168,6 @@ function ExpenseReports({ session }) {
     setStatusFilter("all");
   };
 
-  // Summary stats — always from all items regardless of filters
-  const totalExpenses = items.length;
-  const totalSpent = items.reduce((sum, i) => sum + (i.amount_spent || 0), 0);
-  const grantsWithExpenses = new Set(items.map(i => i.grant_id)).size;
-
   // Filtering
   const filteredExpenses = items.filter(item => {
     if (selectedGrantFilter !== "all" && item.grant_id !== parseInt(selectedGrantFilter)) return false;
@@ -216,6 +211,11 @@ function ExpenseReports({ session }) {
 
   const hasActiveFilters = dateFrom || dateTo || searchTerm || selectedGrantFilter !== "all" || statusFilter !== "all";
   const isFiltered = sortedExpenses.length !== items.length;
+
+  // Summary stats — computed from filtered items so the strip matches the current view
+  const totalExpenses = filteredExpenses.length;
+  const totalSpent = filteredExpenses.reduce((sum, i) => sum + (i.amount_spent || 0), 0);
+  const grantsWithExpenses = new Set(filteredExpenses.map(i => i.grant_id)).size;
 
   function downloadCSV() {
     const header = 'Grant,Expense Item,Amount,Date,Status\n';
@@ -426,8 +426,11 @@ function ExpenseReports({ session }) {
     <section className="expenses-landing">
       <h2 className="page-title">Expense Reports</h2>
 
-      {/* Summary strip */}
+      {/* Summary strip — reflects current filter */}
       <div className="grants-stat-strip">
+        {hasActiveFilters && (
+          <span className="chip-filter-note">Filtered view</span>
+        )}
         <div className="stat-chip">
           <FaMoneyBillWave className="chip-icon" />
           <span className="chip-value">{totalExpenses}</span>

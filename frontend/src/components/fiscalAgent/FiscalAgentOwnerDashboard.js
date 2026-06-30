@@ -119,11 +119,9 @@ export default function FiscalAgentOwnerDashboard({ session, readOnly: readOnlyP
     }
   }
 
-  function handleOnboard(inquiry) {
-    if (!guardWrite()) return;
-    // Bridge into GrantTrail is a backend concern (invite a grantee under the
-    // charity tenant); surface a confirmation for now per UX §2.1 step 10.
-    setToast({ msg: `Onboarding ${inquiry.project?.name || 'project'} as a grantee…` });
+  function handleOnboard() {
+    // ponytail: backend onboarding not yet built; placeholder until invite flow ships
+    setToast({ kind: 'info', msg: 'Grantee onboarding coming soon — contact support to onboard this project manually.' });
   }
 
   if (loading) {

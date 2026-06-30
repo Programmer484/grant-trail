@@ -135,9 +135,9 @@ function getCurrentAccessLabel(session) {
 function LandingPage({ session }) {
   const isAuthenticated = !!session;
   const accessLabel = getCurrentAccessLabel(session);
-  const primaryLink = isAuthenticated ? '/subscription' : '/join';
+  const primaryLink = isAuthenticated ? '/' : '/join';
   const secondaryLink = isAuthenticated ? (session?.userRecord?.role === 'admin' ? '/admin' : '/grants') : '/login';
-  const primaryLabel = isAuthenticated ? 'Manage Subscription' : 'Get Started';
+  const primaryLabel = isAuthenticated ? 'Go to Dashboard' : 'Get Started';
   const secondaryLabel = isAuthenticated ? 'Open Workspace' : 'Sign In';
 
   return (

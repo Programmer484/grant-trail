@@ -166,6 +166,13 @@ function SubscriptionPage({ session, onMembershipUpdated }) {
           </div>
         )}
 
+        {membership?.activeSubscription?.status === 'past_due' && (
+          <div className="subscription-required-alert subscription-past-due-alert">
+            <FaExclamationTriangle />
+            {' '}<strong>Payment failed —</strong> please update your payment method to keep your access.
+          </div>
+        )}
+
         {billingUnavailable && (
           <div className="subscription-billing-unavailable" role="alert">
             <FaExclamationTriangle />
@@ -181,7 +188,7 @@ function SubscriptionPage({ session, onMembershipUpdated }) {
           </button>
         )}
 
-        {!isWaived && !membership?.isExempt && (
+        {!isWaived && !membership?.isExempt && hasAccess && (
           <button className="subscription-manage-btn" onClick={handleManageBilling} disabled={portalLoading}>
             <FaSyncAlt /> {portalLoading ? 'Opening Billing...' : 'Manage Subscription'}
           </button>

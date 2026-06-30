@@ -28,12 +28,9 @@ import {
   isReadOnlyAdmin,
 } from './policy';
 
-// Where an unpaid grantee is sent today. Historically App.js redirected unpaid
-// grantees to "/home" (the LandingPage upgrade page, which links to
-// /subscription). We preserve that target to keep Step-1 behavior identical;
-// the semantically-distinct billing nudge (/subscription) is enforced on
-// blocked *mutations* (Step 2) via useWriteGuard.
-export const GRANTEE_BILLING_REDIRECT = '/home';
+// Where an unpaid grantee is sent. Sends lapsed grantees directly to the
+// subscription page so they can pay, rather than the marketing landing page.
+export const GRANTEE_BILLING_REDIRECT = '/subscription';
 
 // Resolve the redirect (if any) for a guarded route. Returns a path string to
 // redirect to, or null when the route should render. Pure function so the
