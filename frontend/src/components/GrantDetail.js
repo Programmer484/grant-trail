@@ -90,7 +90,7 @@ function GrantDetail({ session }) {
             </Link>
           )}
           <Link to={`/grants/${grant.id}/breakdown`} className="detail-expenses-link">
-            <FaChartBar /> View Budget &amp; Expenses
+            <FaChartBar /> View Breakdown
           </Link>
         </div>
       </div>

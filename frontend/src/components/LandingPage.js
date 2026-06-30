@@ -91,13 +91,13 @@ const testimonialItems = [
   {
     image: '/landing-testimonials/SarahLTestimony1Image.jpg',
     quote: 'GrantTrail has transformed how we track and report our funding.',
-    name: 'Brenna P.',
+    name: 'Sarah L.',
     role: 'Executive Director',
   },
   {
     image: '/landing-testimonials/raymond-owusu-afriyieTestimony2Image.jpg',
     quote: 'Finally, a platform built for nonprofit and fiscal agent workflows.',
-    name: 'Sarah L.',
+    name: 'Brenna P.',
     role: 'Program Manager',
   },
   {

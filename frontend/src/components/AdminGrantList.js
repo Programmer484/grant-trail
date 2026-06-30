@@ -47,7 +47,7 @@ function AdminGrantList({ readOnly = false }) {
         const grantIds = (data || []).map(g => g.id);
         if (grantIds.length > 0) {
           const [{ data: pendingBi }, { data: pendingExp }] = await Promise.all([
-            supabase.from('budget_items').select('grant_id').in('grant_id', grantIds).neq('status', 'approved'),
+            supabase.from('budget_items').select('grant_id').in('grant_id', grantIds).eq('status', 'pending'),
             supabase.from('expenses').select('grant_id').in('grant_id', grantIds).neq('status', 'approved'),
           ]);
           const biMap = {};

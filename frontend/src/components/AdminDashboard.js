@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
-import { FiUsers, FiGrid, FiClock, FiCheckCircle, FiDollarSign, FiArrowRight, FiAlertCircle, FiActivity } from 'react-icons/fi';
+import { FiUsers, FiGrid, FiClock, FiCheckCircle, FiXCircle, FiDollarSign, FiArrowRight, FiAlertCircle, FiActivity } from 'react-icons/fi';
 import StatusBadge from './StatusBadge';
 import ReadOnlyBanner from './ReadOnlyBanner';
 import './Admin.css';
@@ -191,7 +191,7 @@ function AdminDashboard({ session, readOnly = false }) {
           <Link to="/admin/grants?status=rejected" className="asc-card-link">
             <div className="admin-stat-card">
               <div className="asc-icon" style={{ background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)' }}>
-                <FiCheckCircle />
+                <FiXCircle />
               </div>
               <div className="asc-body">
                 <span className="asc-value">{stats.rejected}</span>
