@@ -1,0 +1,27 @@
+#!/usr/bin/env sh
+#
+# post-merge: apply any new migrations to the local DB after a pull.
+#
+# Uses `supabase migration up` (incremental) rather than `db reset` so local
+# data is preserved. Fail-open: if Docker isn't running the check is skipped.
+# Bypass with SKIP_MIGRATION_UP=1 git pull.
+
+set -u
+
+if [ "${SKIP_MIGRATION_UP:-}" = "1" ]; then
+  echo "post-merge: SKIP_MIGRATION_UP=1 — skipping migration up."
+  exit 0
+fi
+
+if ! docker info >/dev/null 2>&1; then
+  echo "post-merge: Docker not running — skipping migration up."
+  exit 0
+fi
+
+echo "post-merge: running 'supabase migration up'..."
+if ! npx --prefix frontend supabase migration up 2>&1; then
+  echo ""
+  echo "⚠️  post-merge: 'supabase migration up' failed."
+  echo "   Run 'npm run db:reset' to rebuild from scratch, or fix the migration manually."
+  exit 0  # warn only — don't block the merge
+fi

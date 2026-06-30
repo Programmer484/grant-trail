@@ -1215,9 +1215,6 @@ export type Database = {
       has_basic_membership:
         | { Args: never; Returns: boolean }
         | { Args: { p_user_id: number }; Returns: boolean }
-      has_directory_access:
-        | { Args: never; Returns: boolean }
-        | { Args: { p_user_id: number }; Returns: boolean }
       has_feature_access: { Args: { p_feature_key: string }; Returns: boolean }
       has_premium_membership:
         | { Args: never; Returns: boolean }

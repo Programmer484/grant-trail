@@ -40,12 +40,16 @@ echo "=============================================================="
 out=$(psql_scalar "SELECT public.platform_root_slug();")
 assert_eq "platform_root_slug() defaults to configured 'tfac'" "tfac" "$out"
 
-# tfac admin (eric.hobbs, user id resolved by email) is exempt; bright admin is not.
+# tfac admin (eric.hobbs) is exempt via the platform-root path; a non-root user
+# with no exemption path is not. NB: bright-horizons (amara) is a poor negative
+# case — the seed gives her tenant an active premium membership, which is itself
+# a valid exemption path, so we assert on a greenleaf user (no premium member,
+# require_subscription=true) to prove the absence of the platform-root exemption.
 out=$(psql_scalar "SELECT public.is_membership_exempt((SELECT id FROM users WHERE email='eric.hobbs@example.com'));")
 assert_eq "platform-root (tfac) admin is membership-exempt" "t" "$out"
 
-out=$(psql_scalar "SELECT public.is_membership_exempt((SELECT id FROM users WHERE email='amara.okafor@example.com'));")
-assert_eq "non-root (bright-horizons) admin is NOT exempt" "f" "$out"
+out=$(psql_scalar "SELECT public.is_membership_exempt((SELECT id FROM users WHERE email='nadia.park@example.com'));")
+assert_eq "non-root (greenleaf) user is NOT exempt" "f" "$out"
 
 # Re-point the platform root to bright-horizons; exemption must follow the config.
 out=$(docker exec -i "$DB_CONTAINER" psql -U postgres -d postgres -tA -v ON_ERROR_STOP=1 <<'SQL' 2>&1

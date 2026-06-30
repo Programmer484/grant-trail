@@ -36,7 +36,7 @@ frontend/src/
 └── styles/                 # global.css, variables.css (design tokens), Forms/Charts/etc.
 
 supabase/
-├── migrations/             # YYYYMMDDHHMMSS_name.sql — schema + RLS (14 files)
+├── migrations/             # YYYYMMDDHHMMSS_name.sql — squashed_schema baseline + new ones
 ├── functions/              # Edge Functions (Deno): create-checkout-session,
 │   │                       #   create-basic-membership-checkout-session,
 │   │                       #   create-fiscal-agent-checkout-session,

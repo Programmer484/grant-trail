@@ -45,7 +45,7 @@
     "db:start": "supabase start",
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset",
-    "db:types": "supabase gen types typescript --local > src/lib/database.types.ts"
+    "db:types": "supabase gen types typescript --local | grep -v '\"_tag\":\"Error\"' > src/lib/database.types.ts"
   },
   "eslintConfig": {
     "env": {
