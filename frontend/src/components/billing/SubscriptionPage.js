@@ -154,7 +154,7 @@ function SubscriptionPage({ session, onMembershipUpdated }) {
           </div>
         )}
 
-        {syncNotice && (
+        {syncNotice && !hasAccess && (
           <div className="subscription-required-alert">
             <strong>Syncing:</strong> {syncNotice}
           </div>
