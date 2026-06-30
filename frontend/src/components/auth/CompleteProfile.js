@@ -128,7 +128,7 @@ function CompleteProfile({ session, onProfileComplete }) {
       // so no checkout. Notify App.js to refresh session; it redirects from there.
       if (onProfileComplete) await onProfileComplete({ user, userRecord });
     } catch (err) {
-      setErrorMsg('Unexpected error completing profile');
+      setErrorMsg(err?.message || 'Unexpected error completing profile');
     } finally {
       setLoading(false);
     }
