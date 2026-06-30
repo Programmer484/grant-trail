@@ -23,6 +23,9 @@ import { useWriteGuard } from '../../lib/useWriteGuard';
 import ReadOnlyBanner from '../common/ReadOnlyBanner';
 import { formatDateMed, formatCurrency } from '../../lib/format';
 import { getReceiptSignedUrl } from '../../lib/storage';
+import { getGrant, updateGrant } from '../../lib/data/grants';
+import { listExpenses, setExpenseStatus } from '../../lib/data/expenses';
+import { listBudgetItems, setBudgetItemStatus } from '../../lib/data/budgetItems';
 import './Admin.css';
 
 const ACTION_LABEL = {
@@ -81,11 +84,7 @@ function AdminGrantReview({ session, readOnly = false }) {
     setError('');
     try {
       // Grant
-      const { data: g, error: gErr } = await supabase
-        .from('grant_record')
-        .select('*')
-        .eq('id', id)
-        .single();
+      const { data: g, error: gErr } = await getGrant(id);
       if (gErr || !g) throw gErr || new Error('Grant not found.');
       setGrant(g);
       setDisbursedInput(g.disbursed_funds != null ? g.disbursed_funds.toString() : '');
@@ -115,18 +114,11 @@ function AdminGrantReview({ session, readOnly = false }) {
       setComments(comms || []);
 
       // Budget items
-      const { data: biData } = await supabase
-        .from('budget_items')
-        .select('*')
-        .eq('grant_id', id)
-        .order('id');
+      const { data: biData } = await listBudgetItems(id);
       setBudgetItems(biData || []);
 
       // Expenses
-      const { data: expData } = await supabase
-        .from('expenses')
-        .select('*')
-        .eq('grant_id', id);
+      const { data: expData } = await listExpenses(id);
       setExpenses(expData || []);
 
       // Receipts — build map: expense_id → first file object
@@ -173,10 +165,7 @@ function AdminGrantReview({ session, readOnly = false }) {
         approval_notes: notes.trim() || null,
       };
 
-      const { error: updateErr } = await supabase
-        .from('grant_record')
-        .update(updates)
-        .eq('id', id);
+      const { error: updateErr } = await updateGrant(id, updates);
       if (updateErr) throw updateErr;
       // Note: grant_status_history is written automatically by the DB trigger
       // trg_grant_status_tracking when grant_record.status changes.
@@ -238,10 +227,7 @@ function AdminGrantReview({ session, readOnly = false }) {
     setDisbursedSuccess('');
     try {
       const value = disbursedInput === '' ? null : parseFloat(disbursedInput);
-      const { error: updateErr } = await supabase
-        .from('grant_record')
-        .update({ disbursed_funds: value })
-        .eq('id', id);
+      const { error: updateErr } = await updateGrant(id, { disbursed_funds: value });
       if (updateErr) throw updateErr;
       setDisbursedSuccess('Disbursed funds updated.');
       await load(true);
@@ -260,9 +246,7 @@ function AdminGrantReview({ session, readOnly = false }) {
     setApprovalLoading(`bi-${item.id}`);
     setApprovalError('');
     try {
-      const { data, error: err } = await supabase.from('budget_items').update({ status: 'approved' }).eq('id', item.id).select();
-      if (err) throw err;
-      if (!data || data.length === 0) throw new Error('Update was not applied — check RLS policies for budget_items.');
+      await setBudgetItemStatus(item.id, 'approved');
       await load(true);
     } catch (err) {
       setApprovalError(`Failed to approve budget item: ${err.message}`);
@@ -276,11 +260,8 @@ function AdminGrantReview({ session, readOnly = false }) {
     setApprovalLoading(`bi-${item.id}`);
     setApprovalError('');
     try {
-      const { data, error: err } = await supabase.from('budget_items').update({ status: 'rejected' }).eq('id', item.id).select();
-      if (err) throw err;
-      if (!data || data.length === 0) throw new Error('Update was not applied — check RLS policies for budget_items.');
-      // Cascade: reset all linked expenses to pending so admin can handle them individually
-      await supabase.from('expenses').update({ status: 'pending' }).eq('budget_item_id', item.id);
+      // Reject + cascade (linked expenses → pending) lives in setBudgetItemStatus.
+      await setBudgetItemStatus(item.id, 'rejected');
       await load(true);
     } catch (err) {
       setApprovalError(`Failed to reject budget item: ${err.message}`);
@@ -294,9 +275,7 @@ function AdminGrantReview({ session, readOnly = false }) {
     setApprovalLoading(`exp-${exp.id}`);
     setApprovalError('');
     try {
-      const { data, error: err } = await supabase.from('expenses').update({ status: 'approved' }).eq('id', exp.id).select();
-      if (err) throw err;
-      if (!data || data.length === 0) throw new Error('Update was not applied — check RLS policies for expenses.');
+      await setExpenseStatus(exp.id, 'approved');
       await load(true);
     } catch (err) {
       setApprovalError(`Failed to approve expense: ${err.message}`);
@@ -310,9 +289,7 @@ function AdminGrantReview({ session, readOnly = false }) {
     setApprovalLoading(`exp-${exp.id}`);
     setApprovalError('');
     try {
-      const { data, error: err } = await supabase.from('expenses').update({ status: 'rejected' }).eq('id', exp.id).select();
-      if (err) throw err;
-      if (!data || data.length === 0) throw new Error('Update was not applied — check RLS policies for expenses.');
+      await setExpenseStatus(exp.id, 'rejected');
       await load(true);
     } catch (err) {
       setApprovalError(`Failed to reject expense: ${err.message}`);

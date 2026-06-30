@@ -23,6 +23,8 @@ import {
 } from 'react-icons/fa';
 import './GrantBreakdown.css';
 import { getReceiptSignedUrl } from "../../lib/storage";
+import { deleteExpense } from "../../lib/data/expenses";
+import { deleteBudgetItem } from "../../lib/data/budgetItems";
 import {
   ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -113,7 +115,7 @@ function GrantBreakdown({ session }) {
       title: 'Delete Budget Item',
       message: `Delete "${biName}"? All expenses under this budget item will also be permanently deleted.`,
       onConfirm: async () => {
-        await supabase.from('budget_items').delete().eq('id', biId);
+        await deleteBudgetItem(biId);
         setConfirmDialog(null);
         fetchData();
       }
@@ -125,7 +127,7 @@ function GrantBreakdown({ session }) {
       title: 'Delete Expense',
       message: `Delete "${expName}"?`,
       onConfirm: async () => {
-        await supabase.from('expenses').delete().eq('id', expId);
+        await deleteExpense(expId);
         setConfirmDialog(null);
         fetchData();
       }

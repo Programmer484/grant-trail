@@ -19,6 +19,7 @@ import {
 } from 'react-icons/fa';
 import './GrantDetail.css';
 import { formatDate } from '../../lib/format';
+import { getGrant } from '../../lib/data/grants';
 
 function GrantDetail({ session }) {
   const { id } = useParams();
@@ -32,11 +33,7 @@ function GrantDetail({ session }) {
     async function fetchData() {
       setLoading(true);
 
-      const { data: grantData, error: grantError } = await supabase
-        .from('grant_record')
-        .select('*')
-        .eq('id', id)
-        .single();
+      const { data: grantData, error: grantError } = await getGrant(id);
 
       if (grantError || !grantData) {
         setError('Grant not found.');
