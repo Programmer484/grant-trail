@@ -430,6 +430,28 @@ async function teardownCrossRole(supabase, registry) {
   }
 }
 
+// Stub the Stripe checkout edge function so signup's "pay at signup" step
+// resolves without a real Stripe call. The self-service "Complete Setup" flow
+// now runs startCheckoutSession() and window.location.assign()s to the returned
+// URL, so we return the post-checkout return URL — the app then lands on
+// /subscription exactly as a completed checkout would. Register this BEFORE
+// clicking "Complete Setup" (a route added after the click never fires for it).
+async function mockSignupCheckout(page, returnUrl = 'http://localhost:3000/subscription?success=true') {
+  await page.route('**/functions/v1/*', async (route) => {
+    const url = route.request().url();
+    if (url.includes('checkout-session') || url.includes('billing')) {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ url: returnUrl }),
+      });
+    } else {
+      await route.continue();
+    }
+  });
+}
+
+module.exports.mockSignupCheckout = mockSignupCheckout;
 module.exports.createServiceClient = createServiceClient;
 module.exports.createCrossRoleRegistry = createCrossRoleRegistry;
 module.exports.seedAuthUser = seedAuthUser;

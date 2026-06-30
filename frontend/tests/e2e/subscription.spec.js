@@ -1,4 +1,4 @@
-const { test, expect } = require('./fixtures');
+const { test, expect, mockSignupCheckout } = require('./fixtures');
 
 test('Flow 2: Subscription & Stripe Mocking', async ({ page, testData }) => {
   const testEmail = `Ryanleong898+sub${Date.now()}@gmail.com`;
@@ -14,32 +14,23 @@ test('Flow 2: Subscription & Stripe Mocking', async ({ page, testData }) => {
   await page.getByPlaceholder('Last name').fill('Tester');
   await page.getByPlaceholder('Phone number').fill('555-0200');
   await page.getByPlaceholder('Organization name').fill('Subscription Org');
+
+  // Pay-at-signup: "Complete Setup" redirects into Stripe checkout. Mock it
+  // (this same stub also covers the manual plan-button checkout in step 4).
+  await mockSignupCheckout(page);
   await page.getByRole('button', { name: 'Complete Setup' }).click();
-  
-  await expect(page).toHaveURL(/.*\/home/);
+
+  await expect(page).toHaveURL(/.*\/subscription/);
 
   // 2. Register UI-created user for cleanup
   const userRecord = await testData.registerUIUser(testEmail);
   expect(userRecord).toBeTruthy();
 
-  // 3. Navigate to Subscription Page
+  // 3. Navigate to Subscription Page (no subscription created yet)
   await page.goto('/subscription');
   await expect(page.locator('text=No active subscription')).toBeVisible();
 
-  // 4. Mock the Stripe Checkout Edge Function
-  await page.route('**/functions/v1/*', async (route) => {
-    const url = route.request().url();
-    if (url.includes('checkout-session') || url.includes('billing')) {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ url: 'http://localhost:3000/subscription?success=true' })
-      });
-    } else {
-      await route.continue();
-    }
-  });
-
+  // 4. Trigger the checkout from the plan button (stub registered above).
   await page.locator('.subscription-plan-btn').first().click();
 
   // 5. Verify redirect

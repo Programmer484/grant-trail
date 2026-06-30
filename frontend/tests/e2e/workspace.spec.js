@@ -1,4 +1,4 @@
-const { test, expect } = require('./fixtures');
+const { test, expect, mockSignupCheckout } = require('./fixtures');
 
 test('Flow 3: Workspace Access & Expense Tracking', async ({ page, supabase, testData }) => {
   const testEmail = `Ryanleong898+flow3_${Date.now()}@gmail.com`;
@@ -14,8 +14,11 @@ test('Flow 3: Workspace Access & Expense Tracking', async ({ page, supabase, tes
   await page.getByPlaceholder('Last name').fill('Tester');
   await page.getByPlaceholder('Phone number').fill('555-0300');
   await page.getByPlaceholder('Organization name').fill('Workspace Org');
+
+  // Pay-at-signup: "Complete Setup" redirects into Stripe checkout; stub it.
+  await mockSignupCheckout(page);
   await page.getByRole('button', { name: 'Complete Setup' }).click();
-  
+
   await expect(page).toHaveURL(/.*\/home|.*\/subscription/);
 
   // 2. Register UI-created user for cleanup
@@ -39,8 +42,8 @@ test('Flow 3: Workspace Access & Expense Tracking', async ({ page, supabase, tes
   await page.fill('input[name="end_spend_period"]', '2025-12-31');
   await page.fill('input[name="grant_amount"]', '10000');
   
-  await page.getByRole('button', { name: /Submit Application/i }).click();
-  
+  await page.getByRole('button', { name: /Submit Grant/i }).click();
+
   await page.waitForURL(/\/grants$/);
   await page.getByRole('link', { name: 'Q3 Operations Grant' }).first().click();
   await page.waitForURL(/\/grants\/\d+$/);

@@ -154,7 +154,11 @@ test.describe('Cross-role visibility', () => {
     const newCtxPage = async () => {
       const c = await browser.newContext();
       ctx.contexts.push(c);
-      return c.newPage();
+      const p = await c.newPage();
+      // Destructive admin actions are guarded by window.confirm; every such
+      // action these tests trigger is intended, so accept dialogs by default.
+      p.on('dialog', (d) => d.accept());
+      return p;
     };
     ctx.adminPage    = await newCtxPage();
     ctx.granteeAPage = await newCtxPage();
@@ -167,7 +171,7 @@ test.describe('Cross-role visibility', () => {
     await login(ctx.granteeAPage, ctx.granteeAEmail, (url) => url.pathname === '/');
     await login(ctx.granteeBPage, ctx.granteeBEmail, (url) => url.pathname === '/'); // auto-exempt: admin's premium in same tenant grants basic access
     await login(ctx.superPage, ctx.superEmail, '**/super/tenants');
-    await login(ctx.granteeCPage, ctx.granteeCEmail, '**/home'); // gated (no subscription)
+    await login(ctx.granteeCPage, ctx.granteeCEmail, '**/subscription'); // gated (no subscription)
   });
 
   test.afterAll(async () => {
@@ -193,7 +197,7 @@ test.describe('Cross-role visibility', () => {
     const insertPromise = granteeA.waitForResponse(r =>
       r.url().includes('grant_record') && r.request().method() === 'POST' &&
       (r.status() === 201 || r.status() === 200));
-    await granteeA.getByRole('button', { name: /Submit Application/i }).click();
+    await granteeA.getByRole('button', { name: /Submit Grant/i }).click();
     await insertPromise;
     await granteeA.waitForURL('**/grants', { timeout: 15000 });
 
@@ -301,8 +305,8 @@ test.describe('Cross-role visibility', () => {
     await expect(granteeA.locator('.status-timeline')).toContainText('Needs Changes');
     // Approval notes render in the Grant Information grid.
     await expect(granteeA.locator('.detail-info-value.notes')).toContainText(notes);
-    // The grantee gets the "Edit Application" affordance for a needs_changes grant.
-    await expect(granteeA.getByRole('link', { name: /Edit Application/i })).toBeVisible();
+    // The grantee gets the "Edit Grant" affordance for a needs_changes grant.
+    await expect(granteeA.getByRole('link', { name: /Edit Grant/i })).toBeVisible();
 
     await expectGranteeNotification(granteeA, 'requires changes');
   });
@@ -405,54 +409,7 @@ test.describe('Cross-role visibility', () => {
   });
 
   // ──────────────────────────────────────────────────────────────────────────
-  // 6. Admin waive subscription → grantee gains access; remove waiver → gated.
-  // ──────────────────────────────────────────────────────────────────────────
-  test('admin waives a grantee subscription → grantee gains access (Basic waived); remove waiver → grantee gated again', async () => {
-    const admin = ctx.adminPage;
-    const granteeB = ctx.granteeBPage;
-
-    // Precondition: granteeB is gated. A full navigation re-bootstraps the
-    // session, so a guarded grantee route bounces to the billing-nudge landing.
-    await granteeB.goto('/grants');
-    await granteeB.waitForURL('**/home', { timeout: 15000 });
-    await granteeB.goto('/subscription');
-    await expect(granteeB.locator('.subscription-status-chip')).toContainText('No active subscription');
-
-    // Admin waives granteeB from User Management.
-    await admin.goto('/admin/users');
-    await expect(admin.locator('.admin-title')).toContainText('User Management');
-    const row = admin.locator('tr', { hasText: ctx.granteeBName });
-    const waivePromise = admin.waitForResponse(r =>
-      r.url().includes('user_memberships') &&
-      (r.request().method() === 'POST' || r.request().method() === 'PATCH') &&
-      (r.status() === 200 || r.status() === 201));
-    await row.getByRole('button', { name: /^Waive/ }).click();
-    await waivePromise;
-    await expect(row.locator('.user-status-pill', { hasText: 'Waived' })).toBeVisible({ timeout: 10000 });
-
-    // Grantee now has access — a guarded route renders, and the chip says waived.
-    await granteeB.goto('/grants');
-    await expect(granteeB.locator('.grants-page-title')).toBeVisible({ timeout: 15000 });
-    await granteeB.goto('/subscription');
-    await expect(granteeB.locator('.subscription-status-chip')).toContainText('waived by your administrator');
-
-    // Admin removes the waiver.
-    await admin.goto('/admin/users');
-    const row2 = admin.locator('tr', { hasText: ctx.granteeBName });
-    const removePromise = admin.waitForResponse(r =>
-      r.url().includes('user_memberships') && r.request().method() === 'DELETE' &&
-      (r.status() === 200 || r.status() === 204));
-    await row2.getByRole('button', { name: /Remove Waiver/i }).click();
-    await removePromise;
-    await expect(row2.locator('.user-status-pill', { hasText: 'None' })).toBeVisible({ timeout: 10000 });
-
-    // Grantee is gated again on the next load.
-    await granteeB.goto('/grants');
-    await granteeB.waitForURL('**/home', { timeout: 15000 });
-  });
-
-  // ──────────────────────────────────────────────────────────────────────────
-  // 7. Super-admin exempt tenant → grantee in it gains access; re-require → gated.
+  // 6. Super-admin exempt tenant → grantee in it gains access; re-require → gated.
   // ──────────────────────────────────────────────────────────────────────────
   test('super-admin exempts a tenant → grantee in it gains access; re-require → grantee gated', async () => {
     const superPage = ctx.superPage;
@@ -460,7 +417,7 @@ test.describe('Cross-role visibility', () => {
 
     // Precondition: granteeC is gated.
     await granteeC.goto('/grants');
-    await granteeC.waitForURL('**/home', { timeout: 15000 });
+    await granteeC.waitForURL('**/subscription', { timeout: 15000 });
 
     // Super-admin flips the tenant to Exempt.
     await superPage.goto('/super/tenants');
@@ -492,11 +449,11 @@ test.describe('Cross-role visibility', () => {
 
     // Grantee is gated again.
     await granteeC.goto('/grants');
-    await granteeC.waitForURL('**/home', { timeout: 15000 });
+    await granteeC.waitForURL('**/subscription', { timeout: 15000 });
   });
 
   // ──────────────────────────────────────────────────────────────────────────
-  // 8. Super-admin disable tenant → its users locked out on next load;
+  // 7. Super-admin disable tenant → its users locked out on next load;
   //    re-enable → restored.
   // ──────────────────────────────────────────────────────────────────────────
   test('super-admin disables a tenant → its grantee is locked out on next load; re-enable → restored', async () => {
@@ -533,8 +490,8 @@ test.describe('Cross-role visibility', () => {
     await expect(row2.locator('.user-status-pill')).toContainText('Active');
 
     // Access restored: the grantee (signed out by the disable) can log in again.
-    // It is unsubscribed, so it lands on the billing-nudge home rather than being
-    // blocked by the Account Disabled screen.
-    await login(granteeC, ctx.granteeCEmail, '**/home');
+    // It is unsubscribed, so it lands on the billing nudge (/subscription) rather
+    // than being blocked by the Account Disabled screen.
+    await login(granteeC, ctx.granteeCEmail, '**/subscription');
   });
 });

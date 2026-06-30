@@ -149,10 +149,10 @@ test.describe('Grantee walkthrough — create grant (self-service)', () => {
     // Self-service info box advertises auto-approval.
     await expect(page.locator('.info-box')).toContainText('automatically approved');
 
-    await page.locator('button.btn-submit', { hasText: 'Submit Application' }).click();
+    await page.locator('button.btn-submit', { hasText: 'Submit Grant' }).click();
 
     // Success screen → redirect to the grants list.
-    await expect(page.getByRole('heading', { name: 'Grant Application Submitted!' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Grant Submitted!' })).toBeVisible();
     await page.waitForURL(/\/grants$/, { timeout: 10000 });
 
     // The row exists and was auto-approved by the trigger (the rule itself is
@@ -253,7 +253,7 @@ test.describe('Grantee walkthrough — resubmit + expense receipt (managed)', ()
     await page.fill('#grant_amount', '16500');
     await page.locator('button.btn-submit', { hasText: 'Save & Resubmit' }).click();
 
-    await expect(page.getByRole('heading', { name: 'Application Updated!' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Grant Updated!' })).toBeVisible();
     await expect(page.locator('.create-grant-success')).toContainText('resubmitted for review');
 
     const { data: row } = await ctx.supabase
