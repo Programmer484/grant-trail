@@ -71,5 +71,16 @@
  * @property {MembershipStatus} membership - Billing entitlement snapshot.
  */
 
+/**
+ * Generated DB-table row/insert/update aliases. These re-export the machine-
+ * generated contract in `database.types.ts` under short names so the
+ * `lib/data/*` modules can annotate queries against the real schema. Regenerate
+ * the source with `npm run db:types` after any migration.
+ * @typedef {import('./database.types').Database['public']['Tables']['grant_record']['Row']} GrantRow
+ * @typedef {import('./database.types').Database['public']['Tables']['grant_record']['Update']} GrantUpdate
+ * @typedef {import('./database.types').Database['public']['Tables']['expenses']['Row']} ExpenseRow
+ * @typedef {import('./database.types').Database['public']['Tables']['budget_items']['Row']} BudgetItemRow
+ */
+
 // No runtime exports — this module is types only.
 export {};

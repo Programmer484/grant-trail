@@ -26,6 +26,7 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "jsdom": "^29.1.1",
     "supabase": "^2.106.0",
+    "typescript": "^5.9.3",
     "vite": "^8.0.16",
     "vitest": "^4.1.9"
   },
@@ -36,12 +37,15 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "verify": "npm run lint && npm run typecheck && npm run test",
+    "typecheck": "tsc --noEmit",
     "lint": "eslint src",
     "e2e": "playwright test",
     "e2e:install": "playwright install",
     "db:start": "supabase start",
     "db:stop": "supabase stop",
-    "db:reset": "supabase db reset"
+    "db:reset": "supabase db reset",
+    "db:types": "supabase gen types typescript --local > src/lib/database.types.ts"
   },
   "eslintConfig": {
     "env": {

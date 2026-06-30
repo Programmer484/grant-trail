@@ -47,7 +47,7 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_KEY || '';
 
 let cachedProductIds = null;
 
-function decodeJwtPayload(token) {
+export function decodeJwtPayload(token) {
   try {
     const payload = token.split('.')[1];
     if (!payload) return null;
@@ -55,6 +55,7 @@ function decodeJwtPayload(token) {
     const padded = normalized + '='.repeat((4 - (normalized.length % 4)) % 4);
     const raw = typeof atob === 'function'
       ? atob(padded)
+      // @ts-ignore Buffer is the Node fallback used when the browser atob is absent (SSR/tests).
       : Buffer.from(padded, 'base64').toString('utf-8');
     return JSON.parse(raw);
   } catch (_error) {
@@ -71,7 +72,7 @@ function getExpectedProjectRef() {
   }
 }
 
-async function getRequiredAccessToken() {
+export async function getRequiredAccessToken() {
   const expectedRef = getExpectedProjectRef();
 
   // Force a token refresh first so edge functions receive a currently valid JWT.
@@ -133,7 +134,7 @@ async function getMembershipProductIds() {
   return cachedProductIds;
 }
 
-async function invokeFirstAvailable(functionNames, payloadFactory, { requireAuth = true } = {}) {
+export async function invokeFirstAvailable(functionNames, payloadFactory, { requireAuth = true } = {}) {
   let lastError = null;
 
   for (const fnName of functionNames) {
