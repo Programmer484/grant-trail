@@ -13,8 +13,9 @@ const path = require('path');
 //   (c) pushes that stage's key set as Secrets / Variables.
 //
 // For `staging`/`production` it auto-fetches everything it safely can (Supabase
-// URL + publishable key, Vercel ids, Stripe webhook secret), validates required
-// values, and refuses if the Basic/Pro prices collide. For `ci` it only handles
+// URL + publishable key, Vercel ids), validates required values, and refuses if
+// the Basic/Pro prices collide. The Stripe webhook secret is set once by hand at
+// setup time (Stripe only reveals it at creation) — see docs/how_to/prod_setup.md. For `ci` it only handles
 // the three Stripe *_TEST secrets — no auto-fetch, no preflight CLIs beyond gh.
 //
 // Incremental by design: you only need to fill the keys you want to add/replace.
@@ -31,7 +32,6 @@ const path = require('path');
 //   node scripts/deploy_secrets.js --env staging
 //   ... -- --keep              keep the local .deploy/<stage>.env afterward
 //   ... -- --dry-run           show what would happen, change nothing
-//   ... -- --recreate-webhook  delete + recreate the Stripe endpoint (prod/staging)
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Silence the Supabase CLI's PostHog telemetry. Without this it can hang on
@@ -42,12 +42,6 @@ process.env.DO_NOT_TRACK = '1';
 const REPO_ROOT = path.join(__dirname, '..');
 const DEPLOY_DIR = path.join(REPO_ROOT, '.deploy');
 const VERCEL_PROJECT_JSON = path.join(REPO_ROOT, '.vercel', 'project.json');
-
-const WEBHOOK_EVENTS = [
-  'checkout.session.completed',
-  'customer.subscription.updated',
-  'customer.subscription.deleted',
-];
 
 // ── Stage definitions ────────────────────────────────────────────────────────
 // Each stage names its GitHub-Actions secret + variable key sets, plus the keys
@@ -74,6 +68,8 @@ const STAGES = {
       'SUPABASE_PROJECT_REF',
       'STRIPE_PRICE_BASIC',
       'STRIPE_PRICE_FISCAL_AGENT',
+      'STRIPE_PRODUCT_BASIC',
+      'STRIPE_PRODUCT_FISCAL_AGENT',
       'STRIPE_BILLING_PORTAL_CONFIGURATION_ID',
       'APP_URL',
       'VITE_SUPABASE_URL',
@@ -84,13 +80,6 @@ const STAGES = {
     optional: [
       'STRIPE_BILLING_PORTAL_CONFIGURATION_ID',
       'VITE_SENTRY_DSN',
-      // Email is optional to DEPLOY so prod can be stood up BEFORE the sending
-      // domain is verified in Resend. When both are blank they are skipped (not
-      // pushed) and the send no-ops cleanly — no failure rows, payment unaffected.
-      // Turning receipts on is pure config: set RESEND_API_KEY (secret) +
-      // EMAIL_FROM (variable, on a Resend-verified domain) and re-push. No code.
-      'RESEND_API_KEY',
-      'EMAIL_FROM',
     ],
     autoFetch: true,
   },
@@ -101,7 +90,6 @@ STAGES.production = { ...STAGES.staging };
 const args = process.argv.slice(2);
 const dryRun = args.includes('--dry-run');
 const keep = args.includes('--keep');
-const recreateWebhook = args.includes('--recreate-webhook');
 
 // Target stage → GitHub Environment name + local config file + key set.
 // Defaults to `production`; override with `--env ci|staging|production`.
@@ -226,53 +214,6 @@ function fetchSupabaseKey(vars, fetched) {
   }
 }
 
-function fetchStripeWebhookSecret(vars, fetched) {
-  if (vars.STRIPE_WEBHOOK_SECRET) return;
-  if (remoteHas('STRIPE_WEBHOOK_SECRET')) return; // already stored — don't create a duplicate endpoint
-  if (!vars.SUPABASE_PROJECT_REF || !vars.STRIPE_SECRET_KEY) return;
-  const url = `https://${vars.SUPABASE_PROJECT_REF}.supabase.co/functions/v1/stripe-webhook`;
-  const apiKey = vars.STRIPE_SECRET_KEY;
-
-  // Does an endpoint for this URL already exist?
-  const list = run('stripe', ['webhook_endpoints', 'list', '--api-key', apiKey, '--limit', '100']);
-  let existing = null;
-  if (list.status === 0) {
-    try { existing = (JSON.parse(list.stdout).data || []).find((e) => e.url === url) || null; } catch (_) { /* ignore */ }
-  }
-
-  if (existing && !recreateWebhook) {
-    console.warn(
-      `⚠️  A Stripe webhook for ${url} already exists (id ${existing.id}).\n` +
-      "    Stripe never re-reveals a signing secret, so it can't be fetched. Either paste\n" +
-      '    the stored STRIPE_WEBHOOK_SECRET into the file, or re-run with --recreate-webhook.'
-    );
-    return;
-  }
-
-  if (dryRun) {
-    console.log(`   [dry-run] would ${existing ? 'recreate' : 'create'} the Stripe webhook at ${url}`);
-    return;
-  }
-
-  if (existing && recreateWebhook) {
-    run('stripe', ['webhook_endpoints', 'delete', existing.id, '--api-key', apiKey, '--confirm']);
-  }
-
-  const createArgs = ['webhook_endpoints', 'create', '--api-key', apiKey, '--url', url];
-  for (const ev of WEBHOOK_EVENTS) createArgs.push('--enabled-events', ev);
-  const created = run('stripe', createArgs);
-  if (created.status !== 0) {
-    console.warn(`⚠️  Could not create the Stripe webhook (fill STRIPE_WEBHOOK_SECRET by hand):\n${(created.stderr || '').trim()}`);
-    return;
-  }
-  try {
-    const secret = JSON.parse(created.stdout).secret;
-    if (secret) { vars.STRIPE_WEBHOOK_SECRET = secret; fetched.STRIPE_WEBHOOK_SECRET = secret; }
-  } catch (e) {
-    console.warn(`⚠️  Created the webhook but could not parse its secret: ${e.message}`);
-  }
-}
-
 // Money-critical: never auto-pick which price is "basic" vs "pro". Just list them.
 function hintStripePrices(vars) {
   if (vars.STRIPE_PRICE_BASIC && vars.STRIPE_PRICE_FISCAL_AGENT) return;
@@ -300,7 +241,6 @@ function resolve(vars) {
   }
   fetchVercelIds(vars, fetched);
   fetchSupabaseKey(vars, fetched);
-  fetchStripeWebhookSecret(vars, fetched);
   hintStripePrices(vars);
 
   const names = Object.keys(fetched);
@@ -317,7 +257,6 @@ function resolve(vars) {
 // authenticated, instead of letting resolve()'s soft warnings leave gaps.
 //   gh       — always (it performs every push)
 //   supabase — only when auto-fetch is on and VITE_SUPABASE_KEY is blank
-//   stripe   — only when auto-fetch is on and STRIPE_WEBHOOK_SECRET is blank
 // Credentials are validated with a cheap read-only call using the env-file
 // token/key, so "signed in" means the token actually works — not just present.
 function toolInstalled(cmd, versionArgs) {
@@ -344,8 +283,8 @@ function preflight(vars) {
   remoteSecrets = listRemote('secret', ENV_NAME);
   remoteVariables = listRemote('variable', ENV_NAME);
 
-  // The Supabase / Stripe CLIs are only used by the auto-fetch path — and only
-  // when the value is absent both locally and in the environment.
+  // The Supabase CLI is only used by the auto-fetch path — and only when the
+  // publishable key is absent both locally and in the environment.
   if (STAGE_DEF.autoFetch) {
     // supabase — only needed to fetch the publishable key.
     if (!vars.VITE_SUPABASE_KEY?.trim()) {
@@ -356,19 +295,6 @@ function preflight(vars) {
           { env: { ...process.env, SUPABASE_ACCESS_TOKEN: vars.SUPABASE_ACCESS_TOKEN }, stdio: 'ignore' });
         if (res.status !== 0) {
           problems.push('• SUPABASE_ACCESS_TOKEN is invalid/expired — mint one at https://supabase.com/dashboard/account/tokens');
-        }
-      }
-    }
-
-    // stripe — only needed to create the webhook endpoint.
-    if (!vars.STRIPE_WEBHOOK_SECRET?.trim() && !remoteHas('STRIPE_WEBHOOK_SECRET')) {
-      if (!toolInstalled('stripe', ['version'])) {
-        problems.push('• Stripe CLI is not installed — https://docs.stripe.com/stripe-cli#install');
-      } else if (vars.STRIPE_SECRET_KEY?.trim()) {
-        const res = run('stripe', ['prices', 'list', '--limit', '1', '--api-key', vars.STRIPE_SECRET_KEY],
-          { stdio: 'ignore' });
-        if (res.status !== 0) {
-          problems.push('• STRIPE_SECRET_KEY is invalid — check https://dashboard.stripe.com/apikeys');
         }
       }
     }

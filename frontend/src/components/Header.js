@@ -64,7 +64,7 @@ function Header({ session, onLogout, notifications, onMarkRead, onMarkAllRead, o
     <header>
       <h1>
         <NavLink to="/" end className="logo-link">
-          <img src="/GrantTrailLogo2.0NotTransparent.png" alt="Grant Trail Logo" className="header-logo" />
+          <img src="/logo-full.png" alt="Grant Trail Logo" className="header-logo" />
           {/* <span>GrantTrail</span>*/}
         </NavLink>
       </h1>

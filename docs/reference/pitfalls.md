@@ -18,7 +18,7 @@ Always run commands from the repository root:
 
 ### Deployment model
 
-Production is deployed from **this** repo by the gated **Deploy to Production** workflow ([`.github/workflows/deploy-prod.yml`](../../.github/workflows/deploy-prod.yml)) — a manual `workflow_dispatch` with environment approval. It applies migrations (`supabase db push`), deploys the Edge Functions, and builds + deploys the Vercel frontend. All prod config has one source of truth: `.deploy/production.env`, synced to the GitHub `production` environment with `npm run deploy:secrets`; see the [Production Setup Checklist](../how_to/prod_setup.md). `main` is not auto-deployed (`vercel.json` disables it). Removed functions are **not** pruned automatically; use `npm run functions:prune`.
+Production is deployed from **this** repo by the **Deploy to Production** workflow ([`.github/workflows/deploy-prod.yml`](../../.github/workflows/deploy-prod.yml)) — a manual `workflow_dispatch`. It applies migrations (`supabase db push`), deploys the Edge Functions, and builds + deploys the Vercel frontend. All prod config has one source of truth: `.deploy/production.env`, synced to the GitHub `production` environment with `npm run deploy:secrets`; see the [Production Setup Checklist](../how_to/prod_setup.md). `main` is not auto-deployed (`vercel.json` disables it). Removed functions are **not** pruned automatically; use `npm run functions:prune`.
 
 ### CI pipeline — [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml)
 
@@ -74,7 +74,7 @@ Never insert the Auth UUID into a column that expects the integer user ID. The t
 - **Invites are not directly readable/writable by clients** — `anon` has no `invites` table access. Resolve and consume invites via the SECURITY DEFINER RPCs `get_invite_by_token` / `consume_invite` (wrapped in `frontend/src/lib/invites.js`), never a direct `supabase.from('invites')` query.
 - **Storage is tenant-scoped by path** — `grant-documents` and `receipts` policies require the object path's 2nd folder segment to be the caller's tenant (`storage_object_tenant_id(name) = current_tenant_id()`). Uploads MUST follow the path convention `attachments/<tenant_id>/<grant_id>/...` and `receipts/<tenant_id>/<grant_id>/<expense_id>/...` or the write is denied.
 - **Privilege columns are frozen on self-update** — a trigger blocks a user changing their own `role` / `tenant_id` / `is_active`; grant `tenant_id` is derived server-side. Do not attempt to set these from the client.
-- **Role Matrix** — The definitive source of truth for all role permissions and RLS policies is [`docs/reference/role_matrix.md`](file:///home/ryan/Documents/grant-trail/docs/reference/role_matrix.md). Always consult this matrix when verifying or modifying access rules.
+- **Role/permission source of truth** — RLS policies live in `supabase/migrations/`. Frontend role logic lives in `frontend/src/lib/policy.js`. Consult those directly when verifying or modifying access rules.
 
 ---
 
@@ -98,7 +98,7 @@ Never insert the Auth UUID into a column that expects the integer user ID. The t
 - **`useCallback` + `useEffect`** — Wrap async data-fetching functions in `useCallback` and pass them as `useEffect` dependencies when they also need to be triggered manually (e.g. on form submit). This prevents render loops.
 - **Set lookups** — When checking membership in a list inside a `.map()`, convert the array to a `Set` first. Avoid `.find()` or `.includes()` in inner loops.
 - **Batching with `.in()`** — Avoid N+1 queries. Collect parent IDs first, then fetch related records in a single `.in('parent_id', ids)` call.
-- **Route guards / authz live in `frontend/src/lib/`** — not inline in `App.js`. Use `policy.js` for role/billing decisions (`hasRequiredSubscription`, `canMutate`, `isReadOnlyAdmin`), `guards.js` `<Guard>` to protect a route, and `useWriteGuard(session)` to gate admin mutations. Admin routes degrade to **read-only** when the admin's subscription lapses (they are not redirected); grantee routes hard-redirect unpaid users to `/home`. See [routing_index.md](routing_index.md).
+- **Route guards / authz live in `frontend/src/lib/`** — not inline in `App.js`. Use `policy.js` for role/billing decisions (`hasRequiredSubscription`, `canMutate`, `isReadOnlyAdmin`), `guards.js` `<Guard>` to protect a route, and `useWriteGuard(session)` to gate admin mutations. Admin routes degrade to **read-only** when the admin's subscription lapses (they are not redirected); grantee routes hard-redirect unpaid users to `/home`. Routes are defined in `frontend/src/App.js`.
 
 ---
 

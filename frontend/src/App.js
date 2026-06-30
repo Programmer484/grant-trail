@@ -287,7 +287,7 @@ function App() {
         alignItems: 'center', justifyContent: 'center',
         background: '#f9fafb', fontFamily: 'Montserrat, sans-serif', padding: '2em',
       }}>
-        <img src="/logo.png" alt="GrantTrail" style={{ height: 56, marginBottom: '1.5em' }} />
+        <img src="/logo-full.png" alt="GrantTrail" style={{ height: 56, marginBottom: '1.5em' }} />
         <div style={{
           background: '#fff', border: '1px solid #e5e7eb', borderRadius: 10,
           padding: '2em 2.5em', maxWidth: 420, textAlign: 'center',
@@ -312,7 +312,7 @@ function App() {
         alignItems: 'center', justifyContent: 'center',
         background: '#f9fafb', fontFamily: 'Montserrat, sans-serif', padding: '2em',
       }}>
-        <img src="/logo.png" alt="GrantTrail" style={{ height: 56, marginBottom: '1.5em' }} />
+        <img src="/logo-full.png" alt="GrantTrail" style={{ height: 56, marginBottom: '1.5em' }} />
         <div style={{
           background: '#fff', border: '1px solid #e5e7eb', borderRadius: 10,
           padding: '2em 2.5em', maxWidth: 420, textAlign: 'center',

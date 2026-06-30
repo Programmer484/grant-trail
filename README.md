@@ -5,8 +5,8 @@ GrantTrail is a multi-tenant web application for non-profits and public sector o
 Built with **React** on the frontend and **Supabase** (Postgres, Auth, Storage, and Edge Functions) on the backend. Supports independent workspaces, configurable approval workflows, and Stripe-based subscription billing.
 
 > [!NOTE]
-> **Deployment:** production is deployed from this repo by the gated **Deploy to
-> Production** GitHub Actions workflow (manual trigger + environment approval).
+> **Deployment:** production is deployed from this repo by the **Deploy to
+> Production** GitHub Actions workflow (manual trigger).
 > All prod config has one source of truth — `.deploy/prod.env`, synced to the
 > GitHub `production` environment with `npm run deploy:secrets`. See the
 > [Production Setup Checklist](docs/how_to/prod_setup.md).
@@ -107,11 +107,9 @@ Lookup material:
 - [Environment Variables](docs/reference/environment_variables.md)
 - [Database Schema](docs/reference/database_schema.md)
 - [RLS Policy Audit](docs/reference/rls_policy_audit.md)
-- [ER Diagram](docs/reference/er_diagram.md)
-- [Routing Index](docs/reference/routing_index.md)
 - [CSS Design Tokens](docs/reference/css_design_tokens.md)
-- [Coding Standards](docs/reference/coding_standards.md)
-- [AI Context](docs/reference/ai_context.md)
+- [Conventions](docs/reference/conventions.md)
+- [Pitfalls](docs/reference/pitfalls.md)
 - [AI Setup Prompt](docs/reference/ai_setup_prompt.md)
 
 ### Explanation

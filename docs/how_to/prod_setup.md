@@ -36,18 +36,30 @@ entirely** — including all the DNS work.
 2. **Stripe (live) products + prices** — in the Stripe **live** dashboard create the
    **Basic** and **Premium** ("Fiscal Agents Plan") products, each with a recurring price.
    Copy the live `price_…` ids
-3. **Resend sending domain (email DNS)** — verify your domain in Resend so receipts can
+3. **Stripe webhook endpoint (once per project)** — Stripe reveals a webhook's signing
+   secret only at creation, so this is a one-time manual step. With your **live** key:
+
+   ```bash
+   stripe webhook_endpoints create \
+     --api-key sk_live_… \
+     --url https://<project-ref>.supabase.co/functions/v1/stripe-webhook \
+     --enabled-events checkout.session.completed \
+     --enabled-events customer.subscription.updated \
+     --enabled-events customer.subscription.deleted
+   ```
+
+   Copy the `whsec_…` from the output into `STRIPE_WEBHOOK_SECRET` in Part B's config.
+   If the Supabase project ref ever changes, delete the old endpoint in the Stripe
+   dashboard and repeat (the URL contains the ref).
+4. **Resend sending domain (email DNS)** — verify your domain in Resend so receipts can
    deliver to any customer. Full step-by-step incl. the DNS records is in
    [`EMAIL-DNS-SETUP.md`](../../EMAIL-DNS-SETUP.md). This is the only step with external
    DNS propagation, so start it early. Outputs: a `RESEND_API_KEY` and a verified
    `EMAIL_FROM` address.
-4. **Populate the `production` GitHub environment** — run Part B's
+5. **Populate the `production` GitHub environment** — run Part B's
    [Fill & push config](#2-fill--push-config) once, including `RESEND_API_KEY` +
    `EMAIL_FROM`. After this the config lives in GitHub; developers never touch it again
    unless a value rotates.
-5. **(Recommended, once)** Add a **required reviewer** to the `production` environment
-   (Settings → Environments → production) so prod deploys pause for approval. The script
-   can't set reviewers via the API.
 6. **Vercel preview env vars (one-time).** The `Vercel – grant-trail` /
    `grant-trail-staging` checks on a PR are Vercel's **Git-integration preview builds** —
    they build on Vercel's own infra and do **not** run through *Deploy to Production*, so

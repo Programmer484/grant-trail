@@ -1,7 +1,6 @@
 name: Deploy to Production
 
-# Gated production deploy. Manual trigger only; the `production` GitHub
-# Environment's required-reviewer protection provides the approval gate.
+# Production deploy. Manual trigger only (workflow_dispatch).
 # Delegates the full deploy pipeline to the reusable deploy.yml.
 on:
   workflow_dispatch:
