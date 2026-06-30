@@ -6,6 +6,10 @@ import { supabase } from '../../supabaseClient';
 export const listBudgetItems = (grantId) =>
   supabase.from('budget_items').select('*').eq('grant_id', grantId).order('id');
 
+/** @param {number[]} grantIds */
+export const listBudgetItemsForGrants = (grantIds) =>
+  supabase.from('budget_items').select('*').in('grant_id', grantIds);
+
 /** @param {number} id */
 export const deleteBudgetItem = (id) => supabase.from('budget_items').delete().eq('id', id);
 

@@ -1,8 +1,7 @@
 // src/components/AdminGrantReview.js
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import * as Sentry from '@sentry/react';
-import { supabase } from '../../supabaseClient';
 import {
   FiArrowLeft,
   FiUser,
@@ -23,9 +22,10 @@ import { useWriteGuard } from '../../lib/useWriteGuard';
 import ReadOnlyBanner from '../common/ReadOnlyBanner';
 import { formatDateMed, formatCurrency } from '../../lib/format';
 import { getReceiptSignedUrl } from '../../lib/storage';
-import { getGrant, updateGrant } from '../../lib/data/grants';
-import { listExpenses, setExpenseStatus } from '../../lib/data/expenses';
-import { listBudgetItems, setBudgetItemStatus } from '../../lib/data/budgetItems';
+import { updateGrant } from '../../lib/data/grants';
+import { setExpenseStatus } from '../../lib/data/expenses';
+import { setBudgetItemStatus } from '../../lib/data/budgetItems';
+import { useGrantReview } from '../../hooks/useGrantReview';
 import './Admin.css';
 
 const ACTION_LABEL = {
@@ -38,12 +38,10 @@ function AdminGrantReview({ session, readOnly = false }) {
   const { id } = useParams();
   const guardWrite = useWriteGuard(session);
 
-  const [grant,   setGrant]   = useState(null);
-  const [grantee, setGrantee] = useState(null);
-  const [history, setHistory] = useState([]);
-  const [comments, setComments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState('');
+  const {
+    grant, grantee, history, comments, budgetItems, expenses, receiptMap,
+    loading, error, reload, postComment,
+  } = useGrantReview(id);
 
   // Action sidebar state
   const [selectedAction,  setSelectedAction]  = useState('');
@@ -64,9 +62,6 @@ function AdminGrantReview({ session, readOnly = false }) {
   const [commentSuccess, setCommentSuccess] = useState('');
 
   // Budget items & expense review state
-  const [budgetItems,    setBudgetItems]    = useState([]);
-  const [expenses,       setExpenses]       = useState([]);
-  const [receiptMap,     setReceiptMap]     = useState({});
   const [approvalLoading, setApprovalLoading] = useState(null); // 'bi-{id}' or 'exp-{id}'
   const [approvalError,   setApprovalError]   = useState('');
 
@@ -76,69 +71,10 @@ function AdminGrantReview({ session, readOnly = false }) {
   const formatDate = formatDateMed;
   const fmt = n => formatCurrency(n);
 
-  // -------------------------------------------------------
-  //  Data fetching
-  // -------------------------------------------------------
-  const load = useCallback(async (silent = false) => {
-    if (!silent) setLoading(true);
-    setError('');
-    try {
-      // Grant
-      const { data: g, error: gErr } = await getGrant(id);
-      if (gErr || !g) throw gErr || new Error('Grant not found.');
-      setGrant(g);
-      setDisbursedInput(g.disbursed_funds != null ? g.disbursed_funds.toString() : '');
-
-      // Grantee (users.id = grant_record.user_id)
-      const { data: u } = await supabase
-        .from('users')
-        .select('firstname, lastname, organization_name, email')
-        .eq('id', g.user_id)
-        .single();
-      setGrantee(u);
-
-      // Status history
-      const { data: hist } = await supabase
-        .from('grant_status_history')
-        .select('*')
-        .eq('grant_id', id)
-        .order('created_at', { ascending: true });
-      setHistory(hist || []);
-
-      // Comments
-      const { data: comms } = await supabase
-        .from('grant_comments')
-        .select('*')
-        .eq('grant_id', id)
-        .order('created_at', { ascending: true });
-      setComments(comms || []);
-
-      // Budget items
-      const { data: biData } = await listBudgetItems(id);
-      setBudgetItems(biData || []);
-
-      // Expenses
-      const { data: expData } = await listExpenses(id);
-      setExpenses(expData || []);
-
-      // Receipts — build map: expense_id → first file object
-      const { data: recData } = await supabase
-        .from('receipts')
-        .select('expense_id, receipt_files')
-        .eq('grant_id', id);
-      const rMap = {};
-      (recData || []).forEach(r => {
-        if (r.receipt_files?.length > 0) rMap[r.expense_id] = r.receipt_files[0];
-      });
-      setReceiptMap(rMap);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [id]);
-
-  useEffect(() => { load(); }, [load]);
+  // Keep the disbursed-funds input in sync with the loaded/reloaded grant.
+  useEffect(() => {
+    setDisbursedInput(grant?.disbursed_funds != null ? grant.disbursed_funds.toString() : '');
+  }, [grant]);
 
   // -------------------------------------------------------
   //  Action handlers
@@ -177,7 +113,7 @@ function AdminGrantReview({ session, readOnly = false }) {
       setActionSuccess(successMsg);
       setSelectedAction('');
       setNotes('');
-      await load(true);
+      await reload(true);
     } catch (err) {
       setActionError(err.message);
     } finally {
@@ -191,24 +127,10 @@ function AdminGrantReview({ session, readOnly = false }) {
     setCommentLoading(true);
     setCommentSuccess('');
     try {
-      const { error: cErr } = await supabase
-        .from('grant_comments')
-        .insert({
-          grant_id: parseInt(id),
-          comment:  commentText.trim(),
-          user_id:  session?.user?.id,
-        });
-      if (cErr) throw cErr;
+      await postComment(commentText.trim(), session?.user?.id);
       setCommentText('');
       setCommentSuccess('Comment posted successfully.');
       setTimeout(() => setCommentSuccess(''), 8000);
-
-      const { data } = await supabase
-        .from('grant_comments')
-        .select('*')
-        .eq('grant_id', id)
-        .order('created_at', { ascending: true });
-      setComments(data || []);
     } catch (err) {
       console.error('Comment error:', err);
       Sentry.captureException(err);
@@ -230,7 +152,7 @@ function AdminGrantReview({ session, readOnly = false }) {
       const { error: updateErr } = await updateGrant(id, { disbursed_funds: value });
       if (updateErr) throw updateErr;
       setDisbursedSuccess('Disbursed funds updated.');
-      await load(true);
+      await reload(true);
     } catch (err) {
       setDisbursedError(err.message);
     } finally {
@@ -247,7 +169,7 @@ function AdminGrantReview({ session, readOnly = false }) {
     setApprovalError('');
     try {
       await setBudgetItemStatus(item.id, 'approved');
-      await load(true);
+      await reload(true);
     } catch (err) {
       setApprovalError(`Failed to approve budget item: ${err.message}`);
     } finally {
@@ -263,7 +185,7 @@ function AdminGrantReview({ session, readOnly = false }) {
     try {
       // Reject + cascade (linked expenses → pending) lives in setBudgetItemStatus.
       await setBudgetItemStatus(item.id, 'rejected');
-      await load(true);
+      await reload(true);
     } catch (err) {
       setApprovalError(`Failed to reject budget item: ${err.message}`);
     } finally {
@@ -277,7 +199,7 @@ function AdminGrantReview({ session, readOnly = false }) {
     setApprovalError('');
     try {
       await setExpenseStatus(exp.id, 'approved');
-      await load(true);
+      await reload(true);
     } catch (err) {
       setApprovalError(`Failed to approve expense: ${err.message}`);
     } finally {
@@ -291,7 +213,7 @@ function AdminGrantReview({ session, readOnly = false }) {
     setApprovalError('');
     try {
       await setExpenseStatus(exp.id, 'rejected');
-      await load(true);
+      await reload(true);
     } catch (err) {
       setApprovalError(`Failed to reject expense: ${err.message}`);
     } finally {

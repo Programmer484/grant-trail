@@ -1,12 +1,15 @@
 // src/components/AdminUserList.js
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { supabase } from '../../supabaseClient';
 import {
   FiArrowLeft, FiUsers, FiSearch, FiShield, FiUser,
   FiCheckCircle, FiXCircle, FiLink, FiAlertCircle,
   FiUserPlus, FiCopy, FiX,
 } from 'react-icons/fi';
+import {
+  listTenantUsers, listActiveMemberships, updateUser,
+  waiveUserSubscription, removeUserMembership, createUserInvite,
+} from '../../lib/data/users';
 import { useWriteGuard } from '../../lib/useWriteGuard';
 import ReadOnlyBanner from '../common/ReadOnlyBanner';
 import './Admin.css';
@@ -38,18 +41,12 @@ function AdminUserList({ session, readOnly = false }) {
     async function fetchUsers() {
       setLoading(true);
       setError('');
-      const { data, error: err } = await supabase
-        .from('users')
-        .select('id, firstname, lastname, email, organization_name, phone_number, role, user_id, is_active, created_at')
-        .order('created_at', { ascending: false });
+      const { data, error: err } = await listTenantUsers();
       if (err) setError(err.message);
       else {
         setUsers(data || []);
         // Fetch active memberships for all users in this tenant
-        const { data: mData } = await supabase
-          .from('user_memberships')
-          .select('*')
-          .eq('is_active', true);
+        const { data: mData } = await listActiveMemberships();
         if (mData) {
           const map = {};
           mData.forEach(m => { map[m.user_id] = m; });
@@ -67,10 +64,7 @@ function AdminUserList({ session, readOnly = false }) {
     if (!guardWrite()) return;
     const newRole = u.role === 'admin' ? 'grantee' : 'admin';
     setSaving(u.id);
-    const { error: err } = await supabase
-      .from('users')
-      .update({ role: newRole })
-      .eq('id', u.id);
+    const { error: err } = await updateUser(u.id, { role: newRole });
     setSaving(null);
     if (err) { alert('Error updating role: ' + err.message); return; }
     setUsers(prev => prev.map(x => x.id === u.id ? { ...x, role: newRole } : x));
@@ -81,10 +75,7 @@ function AdminUserList({ session, readOnly = false }) {
     if (!guardWrite()) return;
     const newActive = !u.is_active;
     setSaving(u.id);
-    const { error: err } = await supabase
-      .from('users')
-      .update({ is_active: newActive })
-      .eq('id', u.id);
+    const { error: err } = await updateUser(u.id, { is_active: newActive });
     setSaving(null);
     if (err) { alert('Error updating status: ' + err.message); return; }
     setUsers(prev => prev.map(x => x.id === u.id ? { ...x, is_active: newActive } : x));
@@ -95,16 +86,7 @@ function AdminUserList({ session, readOnly = false }) {
     if (!guardWrite()) return;
     const waiverTier = u.role === 'admin' ? 'premium' : 'basic';
     setSaving(u.id);
-    const { data, error: err } = await supabase
-      .from('user_memberships')
-      .upsert({
-        user_id: u.id,
-        membership_tier: waiverTier,
-        is_active: true,
-        source: 'manual',
-      }, { onConflict: 'user_id' })
-      .select()
-      .single();
+    const { data, error: err } = await waiveUserSubscription(u.id, waiverTier);
     setSaving(null);
     if (err) { alert('Error waiving subscription: ' + err.message); return; }
     setMemberships(prev => ({ ...prev, [u.id]: data }));
@@ -113,10 +95,7 @@ function AdminUserList({ session, readOnly = false }) {
   async function handleRemoveWaiver(u) {
     if (!guardWrite()) return;
     setSaving(u.id);
-    const { error: err } = await supabase
-      .from('user_memberships')
-      .delete()
-      .eq('user_id', u.id);
+    const { error: err } = await removeUserMembership(u.id);
     setSaving(null);
     if (err) { alert('Error removing waiver: ' + err.message); return; }
     setMemberships(prev => { const next = { ...prev }; delete next[u.id]; return next; });
@@ -130,16 +109,12 @@ function AdminUserList({ session, readOnly = false }) {
     setCopied(false);
 
     const tenantId = session?.userRecord?.tenant_id;
-    const { data, error: err } = await supabase
-      .from('invites')
-      .insert({
-        tenant_id: tenantId,
-        role: inviteRole,
-        email: inviteEmail.trim() || null,
-        created_by: session?.user?.id,
-      })
-      .select()
-      .single();
+    const { data, error: err } = await createUserInvite({
+      tenant_id: tenantId,
+      role: inviteRole,
+      email: inviteEmail.trim() || null,
+      created_by: session?.user?.id,
+    });
 
     setInviteLoading(false);
     if (err) {

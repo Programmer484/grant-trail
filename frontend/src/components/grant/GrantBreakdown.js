@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { supabase } from "../../supabaseClient";
 import AddExpenseModal from "./AddExpenseModal";
 import BudgetItemModal from "./BudgetItemModal";
 import ConfirmDialog from "../common/ConfirmDialog";
@@ -25,6 +24,7 @@ import './GrantBreakdown.css';
 import { getReceiptSignedUrl } from "../../lib/storage";
 import { deleteExpense } from "../../lib/data/expenses";
 import { deleteBudgetItem } from "../../lib/data/budgetItems";
+import { useGrantBreakdown } from "../../hooks/useGrantBreakdown";
 import {
   ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -40,12 +40,9 @@ function formatDate(dateStr) {
 
 function GrantBreakdown({ session }) {
   const { id } = useParams();
-  const [grant, setGrant] = useState(null);
-  const [budgetItems, setBudgetItems] = useState([]);
-  const [error, setError] = useState("");
-  const [expenses, setExpenses] = useState([]);
+  const { grant, budgetItems, expenses, receiptMap, error, reload: fetchData } =
+    useGrantBreakdown(id, session?.userRecord?.id);
   const [expanded, setExpanded] = useState({});
-  const [receiptMap, setReceiptMap] = useState({}); // expense_id → receipt_files[0]
 
   // Budget item modal state
   const [showBudgetItemModal, setShowBudgetItemModal] = useState(false);
@@ -58,53 +55,6 @@ function GrantBreakdown({ session }) {
 
   // Confirm dialog state
   const [confirmDialog, setConfirmDialog] = useState(null); // { title, message, onConfirm }
-
-  const fetchData = async () => {
-    if (!session?.userRecord) return;
-
-    const { data: grantData, error: grantError } = await supabase
-      .from("grant_record")
-      .select("*")
-      .eq("id", id)
-      .eq("user_id", session.userRecord.id)
-      .single();
-
-    if (grantError || !grantData) {
-      setError("Grant not found.");
-      return;
-    }
-    setGrant(grantData);
-
-    const { data: biData } = await supabase
-      .from("budget_items")
-      .select("*")
-      .eq("grant_id", id)
-      .order("id");
-
-    setBudgetItems(biData || []);
-
-    const { data: expData } = await supabase
-      .from("expenses")
-      .select("*")
-      .eq("grant_id", id);
-
-    setExpenses(expData || []);
-
-    const { data: recData } = await supabase
-      .from("receipts")
-      .select("expense_id, receipt_files")
-      .eq("grant_id", id);
-
-    const map = {};
-    (recData || []).forEach(r => {
-      if (r.receipt_files?.length > 0) map[r.expense_id] = r.receipt_files[0];
-    });
-    setReceiptMap(map);
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, [id, session]);
 
   const toggleExpanded = (biId) => {
     setExpanded(prev => ({ ...prev, [biId]: !prev[biId] }));

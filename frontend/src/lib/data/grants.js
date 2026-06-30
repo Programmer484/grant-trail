@@ -8,6 +8,14 @@ import { supabase } from '../../supabaseClient';
 /** @param {number} id */
 export const getGrant = (id) => supabase.from('grant_record').select('*').eq('id', id).single();
 
+/** @param {number} id @param {string} userId */
+export const getOwnGrant = (id, userId) =>
+  supabase.from('grant_record').select('*').eq('id', id).eq('user_id', userId).single();
+
+/** @param {string} userId */
+export const listGrantsForUser = (userId) =>
+  supabase.from('grant_record').select('*').eq('user_id', userId);
+
 /**
  * @param {number} id
  * @param {GrantUpdate} updates

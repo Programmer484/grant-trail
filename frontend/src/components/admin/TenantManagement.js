@@ -1,9 +1,15 @@
 // src/components/TenantManagement.js
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../supabaseClient';
 import {
   FiGrid, FiPlus, FiX, FiUsers, FiCheckCircle, FiXCircle, FiSearch, FiCopy, FiSave,
 } from 'react-icons/fi';
+import {
+  listTenants, listAllUserTenantIds, listAllTenantSettings,
+  createTenant, createTenantSettings, createTenantAdminInvite,
+  getPlatformSettings, updatePlatformSettings,
+  setTenantActive, setTenantRequireSubscription,
+  listTenantUserIds, deleteManualMembershipsForUsers,
+} from '../../lib/data/tenants';
 import './Admin.css';
 
 function TenantManagement({ session }) {
@@ -50,10 +56,7 @@ function TenantManagement({ session }) {
     setError('');
 
     // Fetch tenants
-    const { data: tenantData, error: tErr } = await supabase
-      .from('tenants')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const { data: tenantData, error: tErr } = await listTenants();
 
     if (tErr) {
       setError(tErr.message);
@@ -62,9 +65,7 @@ function TenantManagement({ session }) {
     }
 
     // Fetch user counts per tenant
-    const { data: userData } = await supabase
-      .from('users')
-      .select('tenant_id');
+    const { data: userData } = await listAllUserTenantIds();
 
     const countMap = {};
     (userData || []).forEach(u => {
@@ -72,9 +73,7 @@ function TenantManagement({ session }) {
     });
 
     // Fetch tenant settings
-    const { data: settingsData } = await supabase
-      .from('tenant_settings')
-      .select('*');
+    const { data: settingsData } = await listAllTenantSettings();
 
     const settingsMap = {};
     (settingsData || []).forEach(s => {
@@ -107,11 +106,7 @@ function TenantManagement({ session }) {
     setInviteLink('');
 
     // Create tenant
-    const { data: tenant, error: tErr } = await supabase
-      .from('tenants')
-      .insert({ name: newName.trim(), slug, tenant_type: 'managed' })
-      .select()
-      .single();
+    const { data: tenant, error: tErr } = await createTenant({ name: newName.trim(), slug, tenant_type: 'managed' });
 
     if (tErr) {
       setCreateError(
@@ -124,14 +119,12 @@ function TenantManagement({ session }) {
     }
 
     // Create tenant settings with all approvals on
-    const { error: sErr } = await supabase
-      .from('tenant_settings')
-      .insert({
-        tenant_id: tenant.id,
-        require_grant_approval: true,
-        require_budget_approval: true,
-        require_expense_approval: true,
-      });
+    const { error: sErr } = await createTenantSettings({
+      tenant_id: tenant.id,
+      require_grant_approval: true,
+      require_budget_approval: true,
+      require_expense_approval: true,
+    });
 
     if (sErr) {
       setCreateError(`Tenant created but settings failed: ${sErr.message}`);
@@ -140,16 +133,12 @@ function TenantManagement({ session }) {
     }
 
     // Generate admin invite for the new tenant
-    const { data: invite, error: iErr } = await supabase
-      .from('invites')
-      .insert({
-        tenant_id: tenant.id,
-        role: 'admin',
-        email: adminEmail.trim().toLowerCase(),
-        created_by: session?.user?.id,
-      })
-      .select()
-      .single();
+    const { data: invite, error: iErr } = await createTenantAdminInvite({
+      tenant_id: tenant.id,
+      role: 'admin',
+      email: adminEmail.trim().toLowerCase(),
+      created_by: session?.user?.id,
+    });
 
     if (iErr) {
       setCreateError(`Tenant created but invite failed: ${iErr.message}`);
@@ -178,10 +167,7 @@ function TenantManagement({ session }) {
   }
 
   async function fetchPlatformSettings() {
-    const { data } = await supabase
-      .from('platform_settings')
-      .select('*')
-      .single();
+    const { data } = await getPlatformSettings();
     if (data) {
       setPlatformEmail(data.default_support_email || '');
       setPlatformPhone(data.default_support_phone || '');
@@ -198,14 +184,11 @@ function TenantManagement({ session }) {
     setPlatformSaving(true);
     setPlatformError('');
     setPlatformSuccess('');
-    const { error: err } = await supabase
-      .from('platform_settings')
-      .update({
-        default_support_email: platformEmail.trim() || 'support@granttrail.org',
-        default_support_phone: platformPhone.trim() || '(555) 123-4567',
-        alert_webhook_url: platformWebhook.trim() || null,
-      })
-      .eq('id', 1);
+    const { error: err } = await updatePlatformSettings({
+      default_support_email: platformEmail.trim() || 'support@granttrail.org',
+      default_support_phone: platformPhone.trim() || '(555) 123-4567',
+      alert_webhook_url: platformWebhook.trim() || null,
+    });
     setPlatformSaving(false);
     if (err) {
       setPlatformError(err.message);
@@ -227,10 +210,7 @@ function TenantManagement({ session }) {
   async function handleToggleTenantActive(t) {
     const newActive = !t.is_active;
     setSaving(t.id);
-    const { error: err } = await supabase
-      .from('tenants')
-      .update({ is_active: newActive })
-      .eq('id', t.id);
+    const { error: err } = await setTenantActive(t.id, newActive);
     setSaving(null);
     if (err) {
       alert('Error updating tenant: ' + err.message);
@@ -246,24 +226,14 @@ function TenantManagement({ session }) {
       if (!window.confirm(`Require subscriptions for ${t.name}? This will remove all manual subscription waivers for users in this tenant.`)) return;
     }
     setSaving(t.id);
-    const { error: err } = await supabase
-      .from('tenant_settings')
-      .update({ require_subscription: newVal })
-      .eq('tenant_id', t.id);
+    const { error: err } = await setTenantRequireSubscription(t.id, newVal);
 
     // When switching a self-service tenant back to "Required", clean up manual waiver rows.
     // Only for self-service — managed tenants have per-user waivers set by their admin.
     if (!err && newVal === true && t.tenant_type === 'self_service') {
-      const { data: tenantUsers } = await supabase
-        .from('users')
-        .select('id')
-        .eq('tenant_id', t.id);
+      const { data: tenantUsers } = await listTenantUserIds(t.id);
       if (tenantUsers?.length) {
-        await supabase
-          .from('user_memberships')
-          .delete()
-          .eq('source', 'manual')
-          .in('user_id', tenantUsers.map(u => u.id));
+        await deleteManualMembershipsForUsers(tenantUsers.map(u => u.id));
       }
     }
 

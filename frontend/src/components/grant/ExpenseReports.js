@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { supabase } from "../../supabaseClient";
 import * as XLSX from "xlsx";
 import { FEATURE_KEYS, hasFeature } from "../../lib/billing";
 import { formatDate } from "../../lib/format";
+import { useExpenseReports } from "../../hooks/useExpenseReports";
 import {
   FaWallet,
   FaMoneyBillWave,
@@ -83,9 +83,7 @@ function formatExcelDate(dateStr) {
 
 function ExpenseReports({ session }) {
   const navigate = useNavigate();
-  const [grants, setGrants] = useState([]);
-  const [items, setItems] = useState([]);
-  const [budgetItems, setBudgetItems] = useState([]);
+  const { grants, items, budgetItems } = useExpenseReports(session);
   const [selectedGrantFilter, setSelectedGrantFilter] = useState("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -94,33 +92,6 @@ function ExpenseReports({ session }) {
   const [sortBy, setSortBy] = useState("expense_date");
   const [sortOrder, setSortOrder] = useState("desc");
   const canExportExcel = hasFeature(session, FEATURE_KEYS.EXCEL_EXPORT);
-
-  useEffect(() => {
-    async function fetchData() {
-      if (!session?.userRecord) return;
-
-      const { data: grantData, error: grantError } = await supabase
-        .from("grant_record")
-        .select("*")
-        .eq("user_id", session.userRecord.id);
-
-      const { data: itemData, error: itemError } = await supabase
-        .from("expenses")
-        .select("*")
-        .in("grant_id", grantData?.map((g) => g.id) || []);
-
-      const { data: budgetItemData, error: budgetItemError } = await supabase
-        .from("budget_items")
-        .select("*")
-        .in("grant_id", grantData?.map((g) => g.id) || []);
-
-      if (!grantError) setGrants(grantData || []);
-      if (!itemError) setItems(itemData || []);
-      if (!budgetItemError) setBudgetItems(budgetItemData || []);
-    }
-
-    fetchData();
-  }, [session]);
 
   // Sorting
   const handleSort = (column) => {

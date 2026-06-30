@@ -4,11 +4,17 @@ Zero to a running local GrantTrail. For day-to-day operations (schema changes, r
 troubleshooting) see [Dev Practices](dev_practices.md). For staging/prod see
 [Staging Setup](staging_setup.md) / [Production Setup](prod_setup.md).
 
-## Prerequisites
+## Setup
 
-- **Node.js 18+** and **npm** (`node -v`)
-- **Docker**, running (`docker ps`) — required by local Supabase
-- **Stripe CLI** (`stripe --version`) — only if you're testing billing locally
+1. **Prerequisites:** Node.js 18+ and npm (`node -v`), Docker running (`docker ps`). Stripe CLI
+   (`stripe --version`) only if you'll test billing locally.
+2. `npm run setup` — installs deps, copies env file templates, installs git hooks.
+3. `npm run db:start` — boots local Supabase (Docker + migrations + seed).
+4. `npm run dev` — app at http://localhost:3000.
+
+Runs fully offline with deterministic local keys and seeded auth users — no manual account
+creation, no paywall (seeded memberships bypass it). Log in with one of the
+[test accounts](#test-accounts-password-password123) below.
 
 ## Concepts (60 seconds)
 
@@ -18,17 +24,6 @@ troubleshooting) see [Dev Practices](dev_practices.md). For staging/prod see
   `super_admin` (cross-tenant, via `/super/tenants`).
 - **Tenant types:** *managed* (approval workflows, invite signup, admin role — e.g. TFAC) vs
   *self-service* (open signup, auto-approved, no admin role).
-
-## Quick start
-
-```bash
-npm run setup      # 1. deps + env files + git hooks
-npm run db:start   # 2. local Supabase (Docker + migrations + seed)
-npm run dev        # 3. app at http://localhost:3000
-```
-
-Runs fully offline with deterministic local keys and seeded auth users — no manual account
-creation, no paywall (seeded memberships bypass it).
 
 ### What `npm run setup` does
 
@@ -49,6 +44,14 @@ Migrations are **squashed** into two baseline files (`20260630130000_squashed_sc
 `20260630140000_bootstrap_data.sql`); new changes go on top. See
 [Dev Practices → Schema changes](dev_practices.md#schema-changes-local-first-migrations).
 
+### Frontend env vars
+
+`frontend/.env.local` is created by `npm run setup` (git-ignored, pre-filled with the local
+Supabase URL + anon key — works as-is, nothing to fill in for local dev). It holds two vars,
+`VITE_SUPABASE_URL` and `VITE_SUPABASE_KEY`, read by `supabaseClient.js` / `lib/billing.js`.
+Vars **must** start with `VITE_` (baked into the bundle at build time — restart the dev server
+after changing). Adding a new one? Add a placeholder to `frontend/.env.example` too.
+
 ### Test accounts (password `password123`)
 
 | Email | Role | Notes |
@@ -58,19 +61,6 @@ Migrations are **squashed** into two baseline files (`20260630130000_squashed_sc
 | `sam.reeves@example.com` | Super Admin | subscription-exempt |
 
 Others (jacob.soto, faizan.sharp, etc.) are in `supabase/seed.sql`.
-
-## Frontend env vars
-
-`frontend/.env.local` is created by setup (git-ignored; template is `frontend/.env.example`).
-
-| Variable | Used by | Source |
-|---|---|---|
-| `VITE_SUPABASE_URL` | `supabaseClient.js`, `lib/billing.js` | Supabase → Settings → API → Project URL |
-| `VITE_SUPABASE_KEY` | `supabaseClient.js`, `lib/billing.js` | Supabase → Settings → API → anon/public key |
-
-Vars **must** start with `VITE_` (baked into the bundle at build time — restart the dev server
-after changing). New var → add a placeholder to `.env.example` and handle empty/undefined
-gracefully (no crash). The anon key being in the bundle is normal and safe.
 
 ## Optional integrations
 

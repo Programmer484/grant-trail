@@ -812,6 +812,7 @@ export type Database = {
           id: number
           listing_id: number
           message: string | null
+          notified_at: string | null
           project: Json
           status: string
           submitted_at: string
@@ -824,6 +825,7 @@ export type Database = {
           id?: number
           listing_id: number
           message?: string | null
+          notified_at?: string | null
           project: Json
           status?: string
           submitted_at?: string
@@ -836,6 +838,7 @@ export type Database = {
           id?: number
           listing_id?: number
           message?: string | null
+          notified_at?: string | null
           project?: Json
           status?: string
           submitted_at?: string

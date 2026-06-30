@@ -76,6 +76,24 @@ Deno.serve(async (request) => {
       return ok({ sent: false, reason: 'not_found' });
     }
 
+    // Throttle (F7): an authenticated caller could otherwise replay the same
+    // inquiryId to spam the charity's inbox. Atomically claim the notify slot
+    // by flipping notified_at from NULL — only the request that wins the
+    // update actually sends mail. ponytail: caps spam to the obvious replay
+    // vector (same id); upgrade to a windowed per-user limiter if abuse via
+    // many distinct ids shows up.
+    const { data: claimed, error: claimError } = await adminSupabase
+      .from('sponsorship_inquiries')
+      .update({ notified_at: new Date().toISOString() })
+      .eq('id', inquiryId)
+      .is('notified_at', null)
+      .select('id')
+      .maybeSingle();
+    if (claimError) throw claimError;
+    if (!claimed) {
+      return ok({ sent: false, reason: 'already_notified' });
+    }
+
     const { data: listing, error: listingError } = await adminSupabase
       .from('fiscal_agent_listings')
       .select('id, name, email, owner_user_id')

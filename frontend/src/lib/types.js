@@ -80,6 +80,17 @@
  * @typedef {import('./database.types').Database['public']['Tables']['grant_record']['Update']} GrantUpdate
  * @typedef {import('./database.types').Database['public']['Tables']['expenses']['Row']} ExpenseRow
  * @typedef {import('./database.types').Database['public']['Tables']['budget_items']['Row']} BudgetItemRow
+ * @typedef {import('./database.types').Database['public']['Tables']['tenants']['Row']} TenantRow
+ * @typedef {import('./database.types').Database['public']['Tables']['tenants']['Insert']} TenantInsert
+ * @typedef {import('./database.types').Database['public']['Tables']['tenants']['Update']} TenantUpdate
+ * @typedef {import('./database.types').Database['public']['Tables']['tenant_settings']['Row']} TenantSettingsRow
+ * @typedef {import('./database.types').Database['public']['Tables']['tenant_settings']['Insert']} TenantSettingsInsert
+ * @typedef {import('./database.types').Database['public']['Tables']['tenant_settings']['Update']} TenantSettingsUpdate
+ * @typedef {import('./database.types').Database['public']['Tables']['platform_settings']['Update']} PlatformSettingsUpdate
+ * @typedef {import('./database.types').Database['public']['Tables']['users']['Row']} UserTableRow
+ * @typedef {import('./database.types').Database['public']['Tables']['users']['Update']} UserTableUpdate
+ * @typedef {import('./database.types').Database['public']['Tables']['user_memberships']['Row']} UserMembershipRow
+ * @typedef {import('./database.types').Database['public']['Tables']['invites']['Insert']} InviteInsert
  */
 
 // No runtime exports — this module is types only.
