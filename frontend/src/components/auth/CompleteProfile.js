@@ -3,7 +3,7 @@
 // Handles both invite-based (managed tenant) and self-service flows.
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
-import { getInviteByToken, consumeInvite } from '../../lib/invites';
+import { getInviteByToken, registerInvitedUser } from '../../lib/invites';
 import { startCheckoutSession, MEMBERSHIP_TIERS } from '../../lib/billing';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FaUser, FaBuilding, FaPhone, FaCalendarAlt, FaCheckCircle } from 'react-icons/fa';
@@ -71,25 +71,18 @@ function CompleteProfile({ session, onProfileComplete }) {
       let userRecord;
 
       if (invite) {
-        // Invite flow - create user in the invite's tenant with the invite's role
-        const { data: record, error: insertError } = await supabase
-          .from('users')
-          .upsert(
-            {
-              tenant_id: invite.tenant_id,
-              email: user.email?.toLowerCase(),
-              user_id: user.id,
-              firstname,
-              lastname,
-              organization_name: organization,
-              phone_number: phone,
-              tax_month: taxMonth ? parseInt(taxMonth) : null,
-              role: invite.role,
-            },
-            { onConflict: 'email' }
-          )
-          .select()
-          .single();
+        // Invite flow - a SECURITY DEFINER RPC creates the user in the invite's
+        // tenant with the invite's role (both derived server-side from the
+        // validated token) and consumes the invite atomically. The client never
+        // sends role/tenant_id, so it cannot self-elevate (F1 fix).
+        const { data: record, error: insertError } = await registerInvitedUser({
+          token: inviteToken,
+          firstname,
+          lastname,
+          organization,
+          phone,
+          taxMonth: taxMonth ? parseInt(taxMonth) : null,
+        });
 
         if (insertError) {
           setErrorMsg(insertError.message || 'Error creating user record.');
@@ -97,10 +90,6 @@ function CompleteProfile({ session, onProfileComplete }) {
           return;
         }
         userRecord = record;
-
-        // Mark invite as used via the token-scoped SECURITY DEFINER RPC.
-        // (Post-D7 the client can't write the invites table directly.)
-        await consumeInvite(inviteToken, user.id);
 
       } else {
         // Self-service flow - provision a new tenant atomically via RPC
