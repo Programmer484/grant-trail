@@ -39,7 +39,6 @@ supabase/
 ├── migrations/             # YYYYMMDDHHMMSS_name.sql — squashed_schema baseline + new ones
 ├── functions/              # Edge Functions (Deno): create-checkout-session,
 │   │                       #   create-basic-membership-checkout-session,
-│   │                       #   create-fiscal-agent-checkout-session,
 │   │                       #   create-billing-portal-session, sync-my-subscription,
 │   │                       #   stripe-webhook, notify-inquiry, _shared/, tests/
 ├── tests/                  # RLS adversarial + platform-root SQL tests
