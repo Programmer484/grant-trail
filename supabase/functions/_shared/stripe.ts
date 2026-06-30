@@ -361,7 +361,7 @@ function slugify(value: string): string {
  */
 export async function provisionFiscalAgentFromCheckout(
   session: Stripe.Checkout.Session,
-): Promise<{ token: string | null }> {
+): Promise<{ token: string | null; signupUrl: string | null; email: string; orgName: string }> {
   const metadata = session.metadata ?? {};
   const email = String(
     metadata.intake_email ?? session.customer_details?.email ?? session.customer_email ?? '',
@@ -506,5 +506,11 @@ export async function provisionFiscalAgentFromCheckout(
     token = String(invite.token);
   }
 
-  return { token };
+  // Signup link = the /fiscal-agents/onboard route, which maps ?token= into the
+  // invite-based CompleteProfile flow (see frontend App.js).
+  const signupUrl = token
+    ? `${appUrl}/fiscal-agents/onboard?token=${encodeURIComponent(token)}`
+    : null;
+
+  return { token, signupUrl, email, orgName };
 }

@@ -1,6 +1,6 @@
 import { adminSupabase, corsHeaders, provisionFiscalAgentFromCheckout, stripe, upsertSubscriptionFromStripe } from '../_shared/stripe.ts';
 import { assertPostRequest, ValidationError } from '../_shared/validation.ts';
-import { sendPaymentConfirmationEmail } from '../_shared/email.ts';
+import { sendFiscalAgentInviteEmail, sendPaymentConfirmationEmail } from '../_shared/email.ts';
 
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') {
@@ -43,8 +43,27 @@ Deno.serve(async (request) => {
           // provisioning hiccup never blocks the subscription sync.
           if (String(session.metadata?.provision_flow ?? '').toLowerCase() === 'fiscal_agent_onboarding') {
             try {
-              const { token } = await provisionFiscalAgentFromCheckout(session);
+              const { token, signupUrl, email, orgName } = await provisionFiscalAgentFromCheckout(session);
               console.log('Fiscal agent provisioned; invite token issued:', Boolean(token));
+
+              // Send the "signup link" email the checkout return page promises.
+              // Isolated like the receipt below: a mail failure must never re-throw
+              // here, or Stripe would retry the whole (already-done) provisioning.
+              if (signupUrl && email) {
+                try {
+                  await sendFiscalAgentInviteEmail({ to: email, orgName, signupUrl });
+                } catch (inviteEmailError) {
+                  console.error('Fiscal agent invite email failed:', inviteEmailError);
+                  try {
+                    await adminSupabase.from('system_logs').insert({
+                      event_name: 'fiscal_agent_invite_email_failure',
+                      error_message: inviteEmailError instanceof Error ? inviteEmailError.message : String(inviteEmailError),
+                      severity: 'error',
+                      metadata: { stripe_event_id: event.id },
+                    });
+                  } catch (_logError) { /* swallow */ }
+                }
+              }
             } catch (provisionError) {
               console.error('Fiscal agent provisioning failed:', provisionError);
               // supabase-js query builders are thenables, not Promises — no .catch().
