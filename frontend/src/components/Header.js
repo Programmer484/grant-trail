@@ -87,6 +87,11 @@ function Header({ session, onLogout, notifications, onMarkRead, onMarkAllRead, o
                 <a href="/#how-it-works" onClick={(e) => handlePublicSectionNav(e, 'how-it-works')}>How It Works</a>
               </li>
               <li>
+                <NavLink to="/fiscal-agents" className={({ isActive }) => isActive ? 'active' : ''}>
+                  Fiscal Agents
+                </NavLink>
+              </li>
+              <li>
                 <NavLink to="/login" className={({ isActive }) => isActive ? 'active' : ''}>
                   Login
                 </NavLink>
