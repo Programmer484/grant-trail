@@ -28,6 +28,36 @@ export async function getInviteByToken(token) {
   };
 }
 
+// Create the invited user's record via the `register_invited_user` RPC.
+//
+// The client NEVER sends `role` or `tenant_id`: a SECURITY DEFINER function
+// reads them authoritatively from the validated, unused invite row (matched by
+// the unguessable token), inserts the users row, and consumes the invite — all
+// server-side and atomic. This closes the F1 privilege-escalation hole where the
+// old direct `users` upsert trusted a client-supplied `role`.
+//
+// Returns { data: <created user row>, error }.
+export async function registerInvitedUser({
+  token,
+  firstname,
+  lastname,
+  organization,
+  phone,
+  taxMonth,
+}) {
+  const { data, error } = await supabase.rpc('register_invited_user', {
+    p_token: token,
+    p_firstname: firstname,
+    p_lastname: lastname,
+    p_organization: organization,
+    p_phone: phone,
+    p_tax_month: taxMonth ?? null,
+  });
+
+  if (error) return { data: null, error };
+  return { data, error: null };
+}
+
 // Mark an invite consumed via the `consume_invite` RPC.
 //
 // The `invites` table is no longer directly writable by the just-authenticated

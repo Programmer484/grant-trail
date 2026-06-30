@@ -398,6 +398,96 @@ out=$(psql_as "$SUPER_TFAC" "
   UPDATE subscriptions SET status='canceled' WHERE true; GET DIAGNOSTICS;")
 assert_contains "super_admin CANNOT write subscriptions (read-only)" "UPDATE 0" "$out"
 
+# ============================================================================
+# Security audit F1 — self-INSERT privilege escalation on public.users
+# ============================================================================
+# A fresh authenticated identity with NO existing users row (the attacker just
+# signed up via Supabase Auth). The BEFORE INSERT guard must reject ANY direct
+# self-insert — it cannot be used to mint a super_admin, an admin, or to drop
+# into another tenant. Legitimate signups go through the trusted SECURITY
+# DEFINER RPCs (asserted as positive controls below).
+ATTACKER='00000000-0000-0000-0000-0000000000ff'
+
+out=$(psql_as "$ATTACKER" "
+  INSERT INTO users (tenant_id, firstname, lastname, organization_name, email, phone_number, user_id, role)
+  VALUES (1, 'E', 'V', 'evilorg', 'attacker-sa@x.test', '555', '${ATTACKER}', 'super_admin');
+  SELECT 1;")
+assert_contains "authed user CANNOT self-insert a super_admin row (F1)" \
+  "Direct self-insert into users is not permitted" "$out"
+
+out=$(psql_as "$ATTACKER" "
+  INSERT INTO users (tenant_id, firstname, lastname, organization_name, email, phone_number, user_id, role)
+  VALUES (1, 'E', 'V', 'evilorg', 'attacker-adm@x.test', '555', '${ATTACKER}', 'admin');
+  SELECT 1;")
+assert_contains "authed user CANNOT self-insert an admin row on a managed tenant (F1)" \
+  "Direct self-insert into users is not permitted" "$out"
+
+out=$(psql_as "$ATTACKER" "
+  INSERT INTO users (tenant_id, firstname, lastname, organization_name, email, phone_number, user_id, role, is_active)
+  VALUES (1, 'E', 'V', 'evilorg', 'attacker-x@x.test', '555', '${ATTACKER}', 'grantee', true);
+  SELECT 1;")
+assert_contains "authed user CANNOT self-insert into an arbitrary tenant (F1 horizontal)" \
+  "Direct self-insert into users is not permitted" "$out"
+
+# Positive control: legitimate self-service signup (trusted RPC) STILL works and
+# yields a grantee. (Fresh auth identity, no users row yet.)
+AUTH_SETUP="INSERT INTO auth.users (instance_id, id, aud, role, email, encrypted_password, created_at, updated_at)
+  VALUES ('00000000-0000-0000-0000-000000000000','${ATTACKER}','authenticated','authenticated','newbie@example.com', crypt('x', gen_salt('bf')), now(), now());"
+
+out=$(psql_setup_as "$ATTACKER" "$AUTH_SETUP" "
+  SELECT provision_self_service_tenant('${ATTACKER}','newbie@example.com','New','Bie','Newbie Org','555', NULL)->>'role';")
+assert_eq "legit self-service signup STILL creates a grantee (F1 positive control)" \
+  "grantee" "$(echo "$out" | grep -E 'grantee|admin|super_admin' | tail -1)"
+
+# Positive control: legitimate invite signup (trusted RPC) STILL works and the
+# role/tenant are taken authoritatively from the invite (here an admin invite for
+# the managed bright-horizons tenant 2), NOT from any client input.
+INV_POS_SETUP="${AUTH_SETUP}
+INSERT INTO invites (tenant_id, token, role, email)
+VALUES (2, '44444444-4444-4444-4444-444444444444', 'admin', 'newbie@example.com');"
+
+out=$(psql_setup_as "$ATTACKER" "$INV_POS_SETUP" "
+  SELECT register_invited_user('44444444-4444-4444-4444-444444444444','New','Bie','Newbie Org','555', NULL)->>'role';")
+assert_eq "legit invite signup STILL honors the invite's server-side role (F1 positive)" \
+  "admin" "$(echo "$out" | grep -E 'grantee|admin|super_admin' | tail -1)"
+
+out=$(psql_setup_as "$ATTACKER" "$INV_POS_SETUP" "
+  SELECT register_invited_user('44444444-4444-4444-4444-444444444444','New','Bie','Newbie Org','555', NULL)->>'tenant_id';")
+assert_eq "legit invite signup lands in the invite's tenant (F1 positive)" \
+  "2" "$(echo "$out" | grep -E '^[0-9]+$' | tail -1)"
+
+# ============================================================================
+# Security audit F2 — invite tampering ("System can update invites" dropped)
+# ============================================================================
+# An authed user (tenant-2 grantee) must not be able to rewrite ANY invite.
+INV_F2_SETUP="INSERT INTO invites (tenant_id, token, role, email)
+VALUES (1, '33333333-3333-3333-3333-333333333333', 'grantee', 'victim@tfac.test');"
+
+out=$(psql_setup_as "$GRANTEE_BRIGHT" "$INV_F2_SETUP" "
+  UPDATE invites SET role='admin' WHERE token='33333333-3333-3333-3333-333333333333';
+  GET DIAGNOSTICS;")
+assert_contains "authed user CANNOT rewrite an arbitrary invite (F2)" "UPDATE 0" "$out"
+
+# Positive control: a tenant admin can still CREATE invites for their own tenant.
+out=$(psql_as "$ADMIN_BRIGHT" "
+  INSERT INTO invites (tenant_id, role, email) VALUES (2, 'grantee', 'fresh@bright.test');
+  GET DIAGNOSTICS;")
+assert_contains "tenant admin can STILL create invites for own tenant (F2 positive)" "INSERT 0 1" "$out"
+
+# ============================================================================
+# Security audit F3 — notification forgery ("System can insert notifications" dropped)
+# ============================================================================
+# An authed user cannot forge a notification (not even one targeting themselves);
+# the only writers are SECURITY DEFINER triggers, which bypass RLS. (The trigger
+# path itself is proven still-working by grant-trigger-behaviors.test.sh.)
+out=$(psql_as "$GRANTEE_BRIGHT" "
+  INSERT INTO notifications (tenant_id, user_id, type, title, message, link)
+  VALUES (2, (SELECT id FROM users WHERE user_id='${GRANTEE_BRIGHT}'),
+          'phish', 'Grant Approved', 'Click to claim', 'http://evil.test');
+  SELECT 1;")
+assert_contains "authed user CANNOT forge a notification (F3)" \
+  "violates row-level security policy" "$out"
+
 echo "=============================================================="
 echo " RESULTS: ${pass} passed, ${fail} failed"
 echo "=============================================================="
