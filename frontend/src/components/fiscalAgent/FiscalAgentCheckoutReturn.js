@@ -92,12 +92,13 @@ export default function FiscalAgentCheckoutReturn() {
           <>
             <h2>Payment received</h2>
             <p>
-              Check your email for your signup link to finish setting up your listing. Your listing
-              is being created now and will appear in the directory once you complete it and we
-              verify your 501(c)(3) status.
+              Check your email for your signup link to finish setting up your listing. This usually
+              arrives within a few minutes. Your listing is being created now and will appear in the
+              directory once you complete it and we verify your 501(c)(3) status.
             </p>
             <p className="fad-paywall-fine">
-              Didn’t get the email? Check spam, or contact support to resend your signup link.
+              Didn’t get the email? Check spam, or contact support if you don’t receive it within
+              10 minutes.
             </p>
           </>
         ) : (
