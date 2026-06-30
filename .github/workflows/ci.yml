@@ -257,8 +257,8 @@ jobs:
           # Pinned for reproducibility + supply-chain safety. Bump deliberately:
           # update STRIPE_CLI_SHA256 to the value in that release's
           # stripe-linux-checksums.txt when you change the version.
-          STRIPE_CLI_VERSION: 1.21.8
-          STRIPE_CLI_SHA256: 143b3eb202731d9ffdd510350596ab668d006f440720e746cbaeb8bfa578678a
+          STRIPE_CLI_VERSION: 1.43.2
+          STRIPE_CLI_SHA256: 462c2d15869817f2c9bc1a99b521e203223d7014a5a8b67d4423e7b8b34614bb
         run: |
           set -euo pipefail
           # The Stripe CLI ships as a static binary in GitHub Releases; there is
