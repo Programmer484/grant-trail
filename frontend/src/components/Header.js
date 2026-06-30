@@ -39,6 +39,17 @@ function Header({ session, onLogout, notifications, onMarkRead, onMarkAllRead, o
     : '';
   const isPublicView = !session;
 
+  // Directory is for everyone (seekers, grantees, fiscal agents) — shown in both
+  // the public and authenticated nav. Mutually exclusive branches, so reusing one
+  // element instance is safe.
+  const fiscalAgentsLink = (
+    <li>
+      <NavLink to="/fiscal-agents" className={({ isActive }) => (isActive ? 'active' : '')}>
+        Fiscal Agents
+      </NavLink>
+    </li>
+  );
+
   const handlePublicSectionNav = (e, sectionId) => {
     e.preventDefault();
 
@@ -64,7 +75,7 @@ function Header({ session, onLogout, notifications, onMarkRead, onMarkAllRead, o
     <header>
       <h1>
         <NavLink to="/" end className="logo-link">
-          <img src="/logo-full.png" alt="Grant Trail Logo" className="header-logo" />
+          <img src="/logo-full-white.png" alt="Grant Trail Logo" className="header-logo" />
           {/* <span>GrantTrail</span>*/}
         </NavLink>
       </h1>
@@ -86,11 +97,7 @@ function Header({ session, onLogout, notifications, onMarkRead, onMarkAllRead, o
               <li>
                 <a href="/#how-it-works" onClick={(e) => handlePublicSectionNav(e, 'how-it-works')}>How It Works</a>
               </li>
-              <li>
-                <NavLink to="/fiscal-agents" className={({ isActive }) => isActive ? 'active' : ''}>
-                  Fiscal Agents
-                </NavLink>
-              </li>
+              {fiscalAgentsLink}
               <li>
                 <NavLink to="/login" className={({ isActive }) => isActive ? 'active' : ''}>
                   Login
@@ -175,6 +182,7 @@ function Header({ session, onLogout, notifications, onMarkRead, onMarkAllRead, o
               </li>
             </>
           )}
+          {session && fiscalAgentsLink}
           {session && (
             <NotificationBell
               notifications={notifications}
