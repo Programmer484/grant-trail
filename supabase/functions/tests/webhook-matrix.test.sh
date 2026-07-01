@@ -187,6 +187,7 @@ wait_for_sql "SELECT status FROM subscriptions WHERE stripe_subscription_id='$RE
 wait_for_sql "SELECT is_active::text FROM user_memberships WHERE user_id=$DBUID;" "true" "[reactivate] membership active again"
 wait_for_sql "SELECT membership_tier FROM user_memberships WHERE user_id=$DBUID;" "premium" "[reactivate] membership tier premium"
 assert_eq "$(dbq "SELECT has_premium_membership($DBUID)::text;")" "true" "[reactivate] has_premium_membership true"
+wait_for_sql "SELECT accepts_sponsorships::text FROM tenants WHERE id=(SELECT tenant_id FROM users WHERE id=$DBUID);" "true" "[reactivate] tenant sponsorship entitlement set"
 
 # =========================================================================
 # 8. premium lapse -> published listing auto-unlisted.
@@ -194,16 +195,18 @@ assert_eq "$(dbq "SELECT has_premium_membership($DBUID)::text;")" "true" "[react
 #    demote the owner's 'published' directory listing to 'unlisted'.
 # =========================================================================
 info "[unlist] premium lapse auto-unlists the owner's published listing"
-dbx "INSERT INTO fiscal_agent_listings (tenant_id, owner_user_id, name, status)
-     VALUES ((SELECT tenant_id FROM users WHERE id=$DBUID), $DBUID, 'Lanef Webhook Charity', 'published');"
-assert_eq "$(dbq "SELECT status FROM fiscal_agent_listings WHERE owner_user_id=$DBUID;")" "published" "[unlist] listing seeded published"
+DBTENANT=$(dbq "SELECT tenant_id FROM users WHERE id=$DBUID;")
+dbx "INSERT INTO fiscal_agent_listings (tenant_id, managed_by_user_id, name, status)
+     VALUES ($DBTENANT, $DBUID, 'Lanef Webhook Charity', 'published');"
+assert_eq "$(dbq "SELECT status FROM fiscal_agent_listings WHERE tenant_id=$DBTENANT;")" "published" "[unlist] listing seeded published"
 cancel_subscription "$RESUB"
 wait_for_sql "SELECT status FROM subscriptions WHERE stripe_subscription_id='$RESUB';" "canceled" "[unlist] premium subscription canceled"
-wait_for_sql "SELECT status FROM fiscal_agent_listings WHERE owner_user_id=$DBUID;" "unlisted" "[unlist] listing auto-unlisted on lapse"
+wait_for_sql "SELECT status FROM fiscal_agent_listings WHERE tenant_id=$DBTENANT;" "unlisted" "[unlist] listing auto-unlisted on lapse"
+wait_for_sql "SELECT accepts_sponsorships::text FROM tenants WHERE id=$DBTENANT;" "false" "[unlist] tenant sponsorship entitlement cleared on lapse"
 
 # ---- teardown ------------------------------------------------------------
 info "webhook-matrix: teardown (cancel Stripe subs, delete clocks + users)"
-dbx "DELETE FROM fiscal_agent_listings WHERE owner_user_id=$DBUID;"
+dbx "DELETE FROM fiscal_agent_listings WHERE tenant_id=$DBTENANT;"
 cancel_subscription "$SUB"
 # $PDSUB is cancelled implicitly when its test clock is deleted.
 sapi test_helpers test_clocks delete "$PDCLOCK" >/dev/null 2>&1
