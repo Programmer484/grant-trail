@@ -19,6 +19,14 @@ export class ValidationError extends Error {
   }
 }
 
+/** Thrown when the caller has no valid authenticated profile. Maps to an HTTP 401. */
+export class AuthError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'AuthError';
+  }
+}
+
 /** Reject anything that isn't a POST (handlers answer OPTIONS separately). */
 export function assertPostRequest(request: Request): void {
   if (request.method !== 'POST') {
