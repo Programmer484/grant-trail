@@ -88,14 +88,16 @@ describe('policy.getRole', () => {
 // --- Charity Directory entitlements -----------------------------------------
 // Mirrors the data-layer gate proven in supabase/tests/charity-directory-rls.test.sh:
 // basic (the seeker SKU) OR super_admin OR exempt may VIEW the directory;
-// premium ("Fiscal Agents Plan") OR super_admin OR exempt may OWN a listing —
-// listing ownership folds into premium rather than a separate fiscal_agent SKU.
+// listing ownership is the tenant-level entitlement flag
+// tenants.accepts_sponsorships (synced from the premium subscription) OR
+// super_admin OR exempt — there is no separate fiscal_agent tier/role.
 
 // A seeker/charity session with arbitrary entitlement booleans.
-function seeker({ basic = false, premium = false, exempt = false } = {}) {
+function seeker({ basic = false, premium = false, exempt = false, sponsor = false } = {}) {
   return {
     userRecord: { role: ROLES.GRANTEE },
     membership: { hasBasicAccess: basic, hasPremiumAccess: premium, isExempt: exempt },
+    tenantConfig: { accepts_sponsorships: sponsor },
   };
 }
 
@@ -120,13 +122,14 @@ describe('policy.canViewDirectory', () => {
 });
 
 describe('policy.canOwnListing', () => {
-  it('super_admin OR premium OR exempt may own a listing', () => {
+  it('super_admin OR sponsorship-entitled tenant OR exempt may own a listing', () => {
     expect(canOwnListing(superAdmin())).toBe(true);
-    expect(canOwnListing(seeker({ premium: true }))).toBe(true);
+    expect(canOwnListing(seeker({ sponsor: true }))).toBe(true);
     expect(canOwnListing(seeker({ exempt: true }))).toBe(true);
   });
-  it('basic ALONE does NOT confer ownership (strict, non-cross-granting)', () => {
+  it('memberships ALONE do NOT confer ownership — the tenant flag does', () => {
     expect(canOwnListing(seeker({ basic: true }))).toBe(false);
+    expect(canOwnListing(seeker({ premium: true }))).toBe(false);
   });
   it('no entitlement / logged-out cannot own', () => {
     expect(canOwnListing(seeker())).toBe(false);
