@@ -1,5 +1,6 @@
 import Stripe from 'npm:stripe@18.1.1';
 import { createClient } from 'npm:@supabase/supabase-js@2.84.0';
+import { AuthError } from './validation.ts';
 
 // Stripe/Supabase client construction + the auth/customer helpers shared by
 // every checkout/portal-session edge function (create-checkout-session,
@@ -53,7 +54,7 @@ export function buildRedirectUrl(returnPath: string | undefined, querySuffix: st
 export async function requireAuthenticatedProfile(authHeader: string | null) {
   const bearerToken = authHeader?.replace(/^Bearer\s+/i, '').trim();
   if (!bearerToken) {
-    throw new Error('Unauthorized');
+    throw new AuthError('Unauthorized');
   }
 
   const {
@@ -62,7 +63,7 @@ export async function requireAuthenticatedProfile(authHeader: string | null) {
   } = await adminSupabase.auth.getUser(bearerToken);
 
   if (userError || !user) {
-    throw new Error('Unauthorized');
+    throw new AuthError('Unauthorized');
   }
 
   // Billing schema is anchored to public.users — look up the app user record directly.

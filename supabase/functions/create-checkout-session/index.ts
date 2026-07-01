@@ -1,5 +1,5 @@
 import { adminSupabase, corsHeaders, buildRedirectUrl, ensurePlatformMembershipProductIds, getOrCreateStripeCustomer, requireAuthenticatedProfile, stripe } from '../_shared/stripe-client.ts';
-import { assertPostRequest, parseJsonBody, validateFeatureKey, validateReturnPath, ValidationError } from '../_shared/validation.ts';
+import { assertPostRequest, AuthError, parseJsonBody, validateFeatureKey, validateReturnPath, ValidationError } from '../_shared/validation.ts';
 
 // Feature key → (Stripe price env var, membership tier). `basic_membership` buys
 // the basic plan; every other key folds into the premium "Fiscal Agents Plan".
@@ -65,6 +65,12 @@ Deno.serve(async (request) => {
       return new Response(JSON.stringify({ error: error.message }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
+      });
+    }
+    if (error instanceof AuthError) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 401,
       });
     }
     console.error('Checkout session error:', error);
