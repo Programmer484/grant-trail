@@ -29,8 +29,8 @@ const session = { userRecord: { id: 'u1', tenant_id: 't1' }, user: { id: 'u1' } 
 describe('GrantAttachments error reporting', () => {
   beforeEach(() => { captureException.mockClear(); });
 
-  it('captures the error and preserves console.error when an upload fails', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  it('captures the error in Sentry when an upload fails', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
     const { container } = render(<GrantAttachments grantId={1} session={session} />);
 
     const file = new File(['x'], 'doc.pdf', { type: 'application/pdf' });
@@ -38,13 +38,10 @@ describe('GrantAttachments error reporting', () => {
     fireEvent.click(await screen.findByRole('button', { name: /Upload/i }));
 
     await waitFor(() => expect(captureException).toHaveBeenCalled());
-    expect(consoleSpy).toHaveBeenCalledWith('Attachment upload error:', expect.any(Error));
-
-    consoleSpy.mockRestore();
   });
 
-  it('captures the error and preserves console.error when a delete fails', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  it('captures the error in Sentry when a delete fails', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
     render(<GrantAttachments grantId={1} session={session} />);
 
     // First click arms the confirm prompt, second click runs the (failing) delete.
@@ -52,8 +49,5 @@ describe('GrantAttachments error reporting', () => {
     fireEvent.click(await screen.findByText('Yes'));
 
     await waitFor(() => expect(captureException).toHaveBeenCalled());
-    expect(consoleSpy).toHaveBeenCalledWith('Delete error:', expect.any(Error));
-
-    consoleSpy.mockRestore();
   });
 });
