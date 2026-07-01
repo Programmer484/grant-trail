@@ -424,6 +424,10 @@ export default function FiscalAgentDirectory({ session }) {
         </div>
       </section>
 
+      {/* Toolbar, chips, and result count are only useful once unlocked — hiding
+          them for locked visitors keeps the paywall the single focus. */}
+      {subscribed && (
+      <>
       {/* Toolbar: search + sort */}
       <section className="fad-toolbar">
         <div className="fad-search">
@@ -506,6 +510,8 @@ export default function FiscalAgentDirectory({ session }) {
           </button>
         )}
       </div>
+      </>
+      )}
 
       {/* Results — gated for non-subscribers */}
       <div className="fad-results-wrap">
@@ -619,10 +625,10 @@ export default function FiscalAgentDirectory({ session }) {
             <FaSeedling />
           </span>
           <div className="fad-list-cta-copy">
-            <h2>Are you a charity acting as a Fiscal Agent?</h2>
+            <h2>Run a charity? List it as a Fiscal Agent</h2>
             <p>
-              List your organization so funders and projects seeking a fiscal sponsor can find
-              you. Subscribe to publish your profile.
+              Get found by funders and projects seeking a fiscal sponsor — set up your
+              organization&rsquo;s public profile in minutes.
             </p>
           </div>
           <Link
