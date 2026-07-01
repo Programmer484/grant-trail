@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import { describe, test, it, expect } from 'vitest';
 import StatusBadge from './StatusBadge';
 
 describe('StatusBadge Component', () => {
@@ -9,24 +10,13 @@ describe('StatusBadge Component', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  test('renders approved badge correctly', () => {
-    render(<StatusBadge status="approved" />);
-    const badge = screen.getByText('Approved');
-    expect(badge).toBeInTheDocument();
-    expect(badge).toHaveClass('status-badge', 'status-approved');
-  });
-
-  test('renders pending badge correctly', () => {
-    render(<StatusBadge status="pending" />);
-    const badge = screen.getByText('Pending');
-    expect(badge).toBeInTheDocument();
-    expect(badge).toHaveClass('status-badge', 'status-pending');
-  });
-
-  test('renders needs_changes label correctly', () => {
-    render(<StatusBadge status="needs_changes" />);
-    const badge = screen.getByText('Needs Changes');
-    expect(badge).toBeInTheDocument();
-    expect(badge).toHaveClass('status-badge', 'status-needs_changes');
+  it.each([
+    ['approved', 'Approved'],
+    ['pending', 'Pending'],
+    ['needs_changes', 'Needs Changes'],
+  ])('renders %s status with label and classes', (status, label) => {
+    render(<StatusBadge status={status} />);
+    const badge = screen.getByText(label);
+    expect(badge).toHaveClass('status-badge', `status-${status}`);
   });
 });

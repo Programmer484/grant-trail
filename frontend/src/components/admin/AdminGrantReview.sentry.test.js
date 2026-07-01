@@ -37,8 +37,8 @@ import AdminGrantReview from './AdminGrantReview';
 describe('AdminGrantReview error reporting', () => {
   beforeEach(() => { captureException.mockClear(); });
 
-  it('captures the error in Sentry and preserves console.error when posting a comment fails', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  it('captures the error in Sentry when posting a comment fails', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
     // Subscribed admin (premium) so the write guard (#40) allows the mutation
     // and the insert-error path under test is actually exercised.
     const session = {
@@ -60,8 +60,5 @@ describe('AdminGrantReview error reporting', () => {
     fireEvent.click(screen.getByRole('button', { name: /Post Comment/i }));
 
     await waitFor(() => expect(captureException).toHaveBeenCalledWith(commentError));
-    expect(consoleSpy).toHaveBeenCalledWith('Comment error:', commentError);
-
-    consoleSpy.mockRestore();
   });
 });

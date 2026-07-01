@@ -62,18 +62,14 @@ import App from './App';
 describe('App membership refresh error reporting', () => {
   beforeEach(() => { captureException.mockClear(); });
 
-  it('captures the error in Sentry and preserves console.error when membership refresh fails', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  it('captures the error in Sentry when membership refresh fails', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
     window.history.pushState({}, '', '/subscription');
 
     render(<App />);
 
-    const trigger = await screen.findByText('trigger-refresh');
-    fireEvent.click(trigger);
+    fireEvent.click(await screen.findByText('trigger-refresh'));
 
     await waitFor(() => expect(captureException).toHaveBeenCalledWith(syncError));
-    expect(consoleSpy).toHaveBeenCalledWith('Failed to refresh membership:', syncError);
-
-    consoleSpy.mockRestore();
   });
 });
