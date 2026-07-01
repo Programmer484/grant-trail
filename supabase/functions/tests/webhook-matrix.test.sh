@@ -21,6 +21,9 @@
 #   customer.subscription.updated(→prem) active                 true   (tier=premium)
 #   invoice.payment_failed / past_due    past_due               true   (read-only grace)
 #   customer.subscription.deleted        canceled               false
+#
+# Also proves: cancelling a PREMIUM subscription auto-unlists the owner's
+# 'published' fiscal_agent_listings row (lapse -> status='unlisted').
 
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -185,9 +188,23 @@ wait_for_sql "SELECT is_active::text FROM user_memberships WHERE user_id=$DBUID;
 wait_for_sql "SELECT membership_tier FROM user_memberships WHERE user_id=$DBUID;" "premium" "[reactivate] membership tier premium"
 assert_eq "$(dbq "SELECT has_premium_membership($DBUID)::text;")" "true" "[reactivate] has_premium_membership true"
 
+# =========================================================================
+# 8. premium lapse -> published listing auto-unlisted.
+#    syncListingPublicationFromSubscription: cancelling the premium sub must
+#    demote the owner's 'published' directory listing to 'unlisted'.
+# =========================================================================
+info "[unlist] premium lapse auto-unlists the owner's published listing"
+dbx "INSERT INTO fiscal_agent_listings (tenant_id, owner_user_id, name, status)
+     VALUES ((SELECT tenant_id FROM users WHERE id=$DBUID), $DBUID, 'Lanef Webhook Charity', 'published');"
+assert_eq "$(dbq "SELECT status FROM fiscal_agent_listings WHERE owner_user_id=$DBUID;")" "published" "[unlist] listing seeded published"
+cancel_subscription "$RESUB"
+wait_for_sql "SELECT status FROM subscriptions WHERE stripe_subscription_id='$RESUB';" "canceled" "[unlist] premium subscription canceled"
+wait_for_sql "SELECT status FROM fiscal_agent_listings WHERE owner_user_id=$DBUID;" "unlisted" "[unlist] listing auto-unlisted on lapse"
+
 # ---- teardown ------------------------------------------------------------
 info "webhook-matrix: teardown (cancel Stripe subs, delete clocks + users)"
-for s in "$SUB" "$RESUB"; do cancel_subscription "$s"; done
+dbx "DELETE FROM fiscal_agent_listings WHERE owner_user_id=$DBUID;"
+cancel_subscription "$SUB"
 # $PDSUB is cancelled implicitly when its test clock is deleted.
 sapi test_helpers test_clocks delete "$PDCLOCK" >/dev/null 2>&1
 cleanup_test_users
